@@ -1,0 +1,30 @@
+site_name: OMOP MCP Server
+site_description: Model Context Protocol Server for the Observational Medical Outcomes Partnership (OMOP) Common Data Model
+site_author: vvcb
+theme:
+  name: material
+  palette:
+    scheme: default
+    toggle:
+      icon: material/toggle-switch
+      name: Switch to dark mode
+  features:
+    - navigation.tabs
+    - navigation.top
+    - navigation.expand
+    - navigation.instant
+    - navigation.sections
+    - navigation.tracking
+    - navigation.search.highlight
+    - navigation.search.shareable
+    - navigation.search.suggest
+    - navigation.search.suggest.indexes
+    - navigation.search.suggest.external
+    - search.highlight
+    - search.shareable
+    - search.suggest
+    - search.suggest.indexes
+    - search.suggest.external
+  nav:
+      - Home: index.md
+      

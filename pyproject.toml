@@ -1,0 +1,41 @@
+[project]
+name = "omcp"
+version = "0.1.0"
+description = "Model Context Protocol Server for the Observational Medical Outcomes Partnership (OMOP) Common Data Model"
+readme = "README.md"
+authors = [
+    { name = "vvcb", email = "vvcb.n1@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "ibis-framework>=10.5.0",
+    "mcp[cli]>=1.6.0",
+    "typer>=0.15.2",
+]
+
+[project.scripts]
+omcp = "omcp:main.main"
+
+[project.optional-dependencies]
+duckdb = [
+    "ibis-framework[duckdb]>=10.5.0",
+]
+postgres = [
+    "ibis-framework[postgres]>=10.5.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+    "isort>=6.0.1",
+    "jupyterlab>=4.4.0",
+    "jupyterlab-code-formatter>=3.0.2",
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.6.12",
+    "pre-commit>=4.2.0",
+    "ruff>=0.11.6",
+]
