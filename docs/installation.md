@@ -138,17 +138,19 @@ notepad %APPDATA%\Claude\claude_desktop_config.json
 {
     "mcpServers": {
         "omop_mcp": {
-            "command": "mcp",
+            "command": "uv",
             "args": [
+                "--directory",
+                "/ABSOLUTE/PATH/TO/PARENT/FOLDER",
                 "run",
-                "/path/to/omcp/src/omcp/main.py"
+                "main.py"
             ]
         }
     }
 }
 ```
 
-Replace `/path/to/omcp` with the actual path to your OMCP installation.
+Replace `/ABSOLUTE/PATH/TO/PARENT/FOLDER` with the actual path to your OMCP installation.
 
 ### Step 3: Launch Claude Desktop
 
