@@ -1125,7 +1125,6 @@ source = { editable = "." }
 dependencies = [
     { name = "ibis-framework" },
     { name = "mcp", extra = ["cli"] },
-    { name = "typer" },
 ]
 
 [package.optional-dependencies]
@@ -1154,7 +1153,6 @@ requires-dist = [
     { name = "ibis-framework", extras = ["duckdb"], marker = "extra == 'duckdb'", specifier = ">=10.5.0" },
     { name = "ibis-framework", extras = ["postgres"], marker = "extra == 'postgres'", specifier = ">=10.5.0" },
     { name = "mcp", extras = ["cli"], specifier = ">=1.6.0" },
-    { name = "typer", specifier = ">=0.15.2" },
 ]
 provides-extras = ["duckdb", "postgres"]
 

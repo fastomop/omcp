@@ -3,15 +3,36 @@ name = "omcp"
 version = "0.1.0"
 description = "Model Context Protocol Server for the Observational Medical Outcomes Partnership (OMOP) Common Data Model"
 readme = "README.md"
+license = "MIT"
+keywords = [
+    "claude",
+    "ibis",
+    "llm",
+    "mcp server",
+    "ohdsi",
+    "omop",
+    "python",
+]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Healthcare Industry",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence"
+]
 authors = [
-    { name = "vvcb", email = "vvcb.n1@gmail.com" }
+    { name = "vvcb" }
 ]
 requires-python = ">=3.13"
 dependencies = [
     "ibis-framework>=10.5.0",
     "mcp[cli]>=1.6.0",
-    "typer>=0.15.2",
 ]
+urls = {Documentation = "https://fastomop.github.io/omcp/", Repository = "https://github.com/fastomop/omcp"}
 
 [project.scripts]
 omcp = "omcp:main.main"

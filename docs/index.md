@@ -1,12 +1,12 @@
-# Welcome to OMCP 
+# Welcome to OMCP
 
 ## Observational Medical Outcomes Partnership Common Data Model
 
-The OMOP Common Data Model (CDM) is a standardized data model designed to organize healthcare data into a common structure. It enables systematic analysis across disparate observational databases and facilitates collaborative research in the healthcare domain.
+The [OMOP Common Data Model (CDM)](https://www.ohdsi.org/data-standardization/) is a standardized data model designed to organize healthcare data into a common structure. It enables systematic analysis across disparate observational databases and facilitates collaborative research in the healthcare domain.
 
 ## Model Context Protocol
 
-The Model Context Protocol (MCP) is a framework that enables structured interaction between Large Language Models (LLMs) and databases. OMCP combines this protocol with the OMOP data model to create a powerful system for healthcare data analysis.
+[The Model Context Protocol (MCP)](https://modelcontextprotocol.io/) is a framework that enables structured interaction between Large Language Models (LLMs) and databases. OMCP combines this protocol with the OMOP data model to create a powerful system for healthcare data analysis.
 
 ## What is OMCP?
 
@@ -63,7 +63,3 @@ OMCP sits between LLMs and OMOP CDM databases, providing a structured, secure in
 ### License
 
 OMCP is available under the [MIT License](./license.md).
-
-
-
-
