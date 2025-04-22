@@ -2,6 +2,16 @@ import os
 from mcp.server.fastmcp import FastMCP
 from dotenv import load_dotenv, find_dotenv
 from omcp.db import OmopDatabase
+from omcp.exceptions import (
+    AmbiguousReferenceError,
+    ColumnNotFoundError,
+    EmptyQueryError,
+    NotSelectQueryError,
+    QueryError,
+    SqlSyntaxError,
+    TableNotFoundError,
+    UnauthorizedTableError,
+)
 
 load_dotenv(find_dotenv())
 
@@ -51,23 +61,23 @@ def read_query(query: str) -> str:
     """
     try:
         return db.read_query(query)
-    except db.EmptyQueryError as e:
+    except EmptyQueryError as e:
         return f"Error: {str(e)}. Please provide a non-empty SQL query."
-    except db.SqlSyntaxError as e:
+    except SqlSyntaxError as e:
         return f"Error: {str(e)}. Please check your SQL syntax and try again."
-    except db.NotSelectQueryError as e:
+    except NotSelectQueryError as e:
         return (
             f"Error: {str(e)}. For security reasons, only SELECT queries are allowed."
         )
-    except db.UnauthorizedTableError as e:
+    except UnauthorizedTableError as e:
         return f"Error: {str(e)}. Please use only the authorized tables."
-    except db.ColumnNotFoundError as e:
+    except ColumnNotFoundError as e:
         return f"Error: {str(e)}. Please check column names and table references."
-    except db.TableNotFoundError as e:
+    except TableNotFoundError as e:
         return f"Error: {str(e)}. Please check that you're using valid table names."
-    except db.AmbiguousReferenceError as e:
+    except AmbiguousReferenceError as e:
         return f"Error: {str(e)}. Please qualify column names with table names to resolve ambiguity."
-    except db.QueryError as e:
+    except QueryError as e:
         return f"Error executing query: {str(e)}"
     except Exception as e:
         return f"Unexpected error: {str(e)}. Please contact the administrator if this issue persists."
