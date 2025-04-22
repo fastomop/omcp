@@ -19,17 +19,17 @@ We appreciate your patience and feedback as we work toward a stable release!
 - [Git LFS](https://git-lfs.com/)
 - [uv (Python package installer) ](https://docs.astral.sh/uv/)
 
-  - On MacOS/Linux
+    - On MacOS/Linux
 
-  ```bash
-  curl -LsSf https://astral.sh/uv/install.sh | sh
-  ```
+        ```bash
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        ```
 
-  - On Windows
+    - On Windows
 
-  ```powershell
-  powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-  ```
+        ```powershell
+        powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+        ```
 
 - Python 3.13 or higher (Let UV install and manage python versions within a virtual environment)
 
@@ -53,7 +53,7 @@ uv sync --extra duckdb
 #### With PostgreSQL Support
 
 !!!warning
-Not implemented yet.
+    Not implemented yet.
 
 ```bash
 uv sync --extra postgres
@@ -124,8 +124,8 @@ duckdb -ui synthea.duckdb
 ```
 
 !!! warning
-DuckDB does not allow multiple processes to open a connection to the database at the same time when at least one of them has write access.
-To avoid running into problems, close any open connections to the database before running the MCP server.
+    DuckDB does not allow multiple processes to open a connection to the database at the same time when at least one of them has write access.
+    To avoid running into problems, close any open connections to the database before running the MCP server.
 
 ## Integrating with Claude Desktop 🤖
 
