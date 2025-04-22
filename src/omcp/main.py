@@ -8,6 +8,10 @@ load_dotenv(find_dotenv())
 
 connection_string = os.environ["DB_CONNECTION_STRING"]
 
+# Default host and port values, can be overridden via environment variables
+host = os.environ.get("MCP_HOST", "localhost")
+port = int(os.environ.get("MCP_PORT", "8000"))
+
 mcp = FastMCP(name="OMOP MCP Server")
 db = OmopDatabase(connection_string=connection_string)
 
@@ -38,22 +42,47 @@ def read_query(query: str) -> str:
     """Run a SQL query against the OMOP database.
 
     This function is a tool in the MCP server that allows users to execute SQL queries
-    against the OMOP database. Only SELECT queries are allowed. Resulsts are returned as CSV.
+    against the OMOP database. Only SELECT queries are allowed. Results are returned as CSV.
+
     Args:
         query: SQL query to execute
     Returns:
-        Result of the query as a string or the exception message if the query fails.
+        Result of the query as a string or a detailed error message if the query fails.
     """
-
-    return db.read_query(query)
+    try:
+        return db.read_query(query)
+    except db.EmptyQueryError as e:
+        return f"Error: {str(e)}. Please provide a non-empty SQL query."
+    except db.SqlSyntaxError as e:
+        return f"Error: {str(e)}. Please check your SQL syntax and try again."
+    except db.NotSelectQueryError as e:
+        return (
+            f"Error: {str(e)}. For security reasons, only SELECT queries are allowed."
+        )
+    except db.UnauthorizedTableError as e:
+        return f"Error: {str(e)}. Please use only the authorized tables."
+    except db.ColumnNotFoundError as e:
+        return f"Error: {str(e)}. Please check column names and table references."
+    except db.TableNotFoundError as e:
+        return f"Error: {str(e)}. Please check that you're using valid table names."
+    except db.AmbiguousReferenceError as e:
+        return f"Error: {str(e)}. Please qualify column names with table names to resolve ambiguity."
+    except db.QueryError as e:
+        return f"Error executing query: {str(e)}"
+    except Exception as e:
+        return f"Unexpected error: {str(e)}. Please contact the administrator if this issue persists."
 
 
 def main():
     """Main function to run the MCP server."""
+    print(f"Starting OMOP MCP Server with SSE transport on {host}:{port}")
 
-
-    # Run the server
-    mcp.run(transport="stdio")
+    # Run the server with SSE transport
+    mcp.run(
+        transport="sse",
+        # host=host,
+        # port=port
+    )
 
 
 if __name__ == "__main__":
