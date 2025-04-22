@@ -38,7 +38,7 @@ OMCP (OMOP Model Context Protocol) is an open-source server that enables Large L
 
 ### Getting Started
 
-See our [Installation Guide](./installation.md) to set up OMCP in your environment. The [API Documentation](./api/index.md) provides details on available endpoints and interaction patterns.
+See our [Installation Guide](./installation.md) to set up OMCP in your environment.
 
 ### Architecture
 
@@ -62,4 +62,4 @@ OMCP sits between LLMs and OMOP CDM databases, providing a structured, secure in
 
 ### License
 
-OMCP is available under the [MIT License](./license.md).
+OMCP is available under the [MIT License](https://opensource.org/license/mit).

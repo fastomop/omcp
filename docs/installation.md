@@ -144,11 +144,15 @@ On Linux, use https://github.com/aaddrick/claude-desktop-debian/ or similar unti
 # Linux
 mkdir -p ~/.config/Claude
 nano ~/.config/Claude/claude_desktop_config.json
+```
 
+```bash
 # macOS
 mkdir -p ~/Library/Application\ Support/Claude
 nano ~/Library/Application\ Support/Claude/claude_desktop_config.json
+```
 
+```cmd
 # Windows
 notepad %APPDATA%\Claude\claude_desktop_config.json
 ```
