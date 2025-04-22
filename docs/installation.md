@@ -18,18 +18,14 @@ We appreciate your patience and feedback as we work toward a stable release!
 - [Git](https://git-scm.com/)
 - [Git LFS](https://git-lfs.com/)
 - [uv (Python package installer) ](https://docs.astral.sh/uv/)
-
     - On MacOS/Linux
-
-        ```bash
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-        ```
-
+    ```bash
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    ```
     - On Windows
-
-        ```powershell
-        powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-        ```
+    ```powershell
+    powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+    ```
 
 - Python 3.13 or higher (Let UV install and manage python versions within a virtual environment)
 
@@ -52,7 +48,7 @@ uv sync --extra duckdb
 
 #### With PostgreSQL Support
 
-!!!warning
+!!! warning
     Not implemented yet.
 
 ```bash
