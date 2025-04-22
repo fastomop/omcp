@@ -4,6 +4,17 @@ from ibis.backends.duckdb import Backend as DuckDBBackend
 from typing import Dict, List, Optional
 from sqlglot import expressions as exp
 from sqlglot import parse_one, ParseError
+from omcp.exceptions import (
+    AmbiguousReferenceError,
+    ColumnNotFoundError,
+    EmptyQueryError,
+    NotSelectQueryError,
+    QueryError,
+    SqlSyntaxError,
+    TableNotFoundError,
+    UnauthorizedTableError,
+)
+from functools import lru_cache
 
 
 class OmopDatabase:
@@ -43,48 +54,44 @@ class OmopDatabase:
         ]
         self.connection_string = connection_string
         self.row_limit = 1000  # Default row limit for queries
-        self.allowed_tables = (
-            allowed_tables
-            if allowed_tables is not None
-            else [
-                "care_site",
-                "cdm_source",
-                "concept",
-                "concept_ancestor",
-                "concept_class",
-                "concept_relationship",
-                "concept_synonym",
-                "condition_era",
-                "condition_occurrence",
-                "cost",
-                "death",
-                "device_exposure",
-                "domain",
-                "dose_era",
-                "drug_era",
-                "drug_exposure",
-                "drug_strength",
-                "episode",
-                "episode_event",
-                "fact_relationship",
-                "location",
-                "measurement",
-                "metadata",
-                "note",
-                "note_nlp",
-                "observation",
-                "observation_period",
-                "payer_plan_period",
-                "person",
-                "procedure_occurrence",
-                "provider",
-                "relationship",
-                "specimen",
-                "visit_detail",
-                "visit_occurrence",
-                "vocabulary",
-            ]
-        )
+        self.allowed_tables = allowed_tables or [
+            "care_site",
+            "cdm_source",
+            "concept",
+            "concept_ancestor",
+            "concept_class",
+            "concept_relationship",
+            "concept_synonym",
+            "condition_era",
+            "condition_occurrence",
+            "cost",
+            "death",
+            "device_exposure",
+            "domain",
+            "dose_era",
+            "drug_era",
+            "drug_exposure",
+            "drug_strength",
+            "episode",
+            "episode_event",
+            "fact_relationship",
+            "location",
+            "measurement",
+            "metadata",
+            "note",
+            "note_nlp",
+            "observation",
+            "observation_period",
+            "payer_plan_period",
+            "person",
+            "procedure_occurrence",
+            "provider",
+            "relationship",
+            "specimen",
+            "visit_detail",
+            "visit_occurrence",
+            "vocabulary",
+        ]
 
         self.allow_source_values: bool = allow_source_values
 
@@ -128,6 +135,15 @@ class OmopDatabase:
         except Exception as e:
             raise ConnectionError(f"Failed to connect to database: {str(e)}")
 
+    def _extract_tables_from_query(self, parsed_query) -> List[str]:
+        """Extract table names from a parsed query"""
+        tables = [
+            node.name for node in parsed_query.walk() if isinstance(node, exp.Table)
+        ]
+
+        return tables
+
+    @lru_cache(maxsize=128)
     def get_information_schema(self) -> Dict[str, List[str]]:
         """Get the information schema of the database."""
         try:
@@ -144,6 +160,7 @@ class OmopDatabase:
         except Exception as e:
             raise QueryError(f"Failed to get information schema: {str(e)}")
 
+    @lru_cache(maxsize=128)
     def read_query(self, query: str) -> str:
         """
         Execute a read-only SQL query and return results as CSV
@@ -154,8 +171,8 @@ class OmopDatabase:
         Returns:
             CSV string representing query results
         """
-        if not query or not query.strip():
-            raise EmptyQueryError("Query cannot be empty")
+        if not query.strip():
+            raise EmptyQueryError("Query cannot be empty.")
 
         try:
             try:
@@ -207,65 +224,3 @@ class OmopDatabase:
                 raise AmbiguousReferenceError(f"Ambiguous column reference: {str(e)}")
             else:
                 raise QueryError(f"Failed to execute read query: {str(e)}")
-
-    def _extract_tables_from_query(self, parsed_query) -> List[str]:
-        """Extract table names from a parsed query"""
-        tables = []
-        if hasattr(parsed_query, "args") and "from" in parsed_query.args:
-            from_clause = parsed_query.args["from"]
-            if isinstance(from_clause, list):
-                for item in from_clause:
-                    if hasattr(item, "name"):
-                        tables.append(item.name)
-            elif hasattr(from_clause, "name"):
-                tables.append(from_clause.name)
-        return tables
-
-
-# Define more specific error classes for better error handling
-class QueryError(Exception):
-    """Base exception raised for errors in the query execution"""
-
-    pass
-
-
-class EmptyQueryError(QueryError):
-    """Exception raised when the query is empty"""
-
-    pass
-
-
-class SqlSyntaxError(QueryError):
-    """Exception raised for SQL syntax errors"""
-
-    pass
-
-
-class NotSelectQueryError(QueryError):
-    """Exception raised when a non-SELECT query is attempted"""
-
-    pass
-
-
-class UnauthorizedTableError(QueryError):
-    """Exception raised when query attempts to access unauthorized tables"""
-
-    pass
-
-
-class ColumnNotFoundError(QueryError):
-    """Exception raised when a column referenced in the query doesn't exist"""
-
-    pass
-
-
-class TableNotFoundError(QueryError):
-    """Exception raised when a table referenced in the query doesn't exist"""
-
-    pass
-
-
-class AmbiguousReferenceError(QueryError):
-    """Exception raised when a column reference is ambiguous"""
-
-    pass
