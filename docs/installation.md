@@ -16,18 +16,22 @@ We appreciate your patience and feedback as we work toward a stable release!
 ### Prerequisites
 
 - [Git](https://git-scm.com/)
+- [Git LFS](https://git-lfs.com/)
 - [uv (Python package installer) ](https://docs.astral.sh/uv/)
-    - On MacOS/Linux
-    ```bash
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-    ```
-    - On Windows
-    ```powershell
-    powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-    ```
+
+  - On MacOS/Linux
+
+  ```bash
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  ```
+
+  - On Windows
+
+  ```powershell
+  powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+  ```
 
 - Python 3.13 or higher (Let UV install and manage python versions within a virtual environment)
-
 
 ### Step 1: Clone the Repository
 
@@ -49,7 +53,7 @@ uv sync --extra duckdb
 #### With PostgreSQL Support
 
 !!!warning
-    Not implemented yet.
+Not implemented yet.
 
 ```bash
 uv sync --extra postgres
@@ -61,10 +65,28 @@ uv sync --extra postgres
 source .venv/bin/activate  # On Windows use: .venv\Scripts\activate
 ```
 
-
 ## Using the Synthetic Database 🗄️
 
 OMCP comes with a synthetic OMOP database (located at `/synthetic_data/synthea.duckdb`) for testing and development purposes. This database follows the OMOP Common Data Model and contains fictional patient data available at [Synthea](https://synthetichealth.github.io/synthea/).
+
+### Retrieving Synthea.duckdb
+Since the database is a rather large file, the actual database has been replaced by a Git LFS pointer, you should see something like this inside `synthea.duckdb`:
+```
+version https://git-lfs.github.com/spec/v1
+oid sha256:d753b619a8650c966ce219daa35b4126fb9307b790e49f0244646cb3b796feab
+size 21508096
+```
+
+to retrieve the database:
+
+```bash
+git lfs install
+```
+and then:
+
+```bash
+git lfs pull
+```
 
 ### Setting Up the Environment Variable
 
@@ -102,8 +124,8 @@ duckdb -ui synthea.duckdb
 ```
 
 !!! warning
-    DuckDB does not allow multiple processes to open a connection to the database at the same time when at least one of them has write access.
-    To avoid running into problems, close any open connections to the database before running the MCP server.
+DuckDB does not allow multiple processes to open a connection to the database at the same time when at least one of them has write access.
+To avoid running into problems, close any open connections to the database before running the MCP server.
 
 ## Integrating with Claude Desktop 🤖
 
@@ -113,7 +135,6 @@ OMCP provides a Model Context Protocol server that can integrate with Claude Des
 
 Download and install [Claude Desktop](https://claude.ai/download) from the official website.
 On Linux, use https://github.com/aaddrick/claude-desktop-debian/ or similar until an official release becomes available.
-
 
 ### Step 2: Configure Claude Desktop to Use OMCP
 
@@ -136,19 +157,21 @@ notepad %APPDATA%\Claude\claude_desktop_config.json
 
 ```json
 {
-    "mcpServers": {
-        "omop_mcp": {
-            "command": "mcp",
-            "args": [
-                "run",
-                "/path/to/omcp/src/omcp/main.py"
-            ]
-        }
+  "mcpServers": {
+    "omop_mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/ABSOLUTE/PATH/TO/PARENT/FOLDER THAT CONTAINS main.py",
+        "run",
+        "main.py"
+      ]
     }
+  }
 }
 ```
 
-Replace `/path/to/omcp` with the actual path to your OMCP installation.
+Replace `/ABSOLUTE/PATH/TO/PARENT/FOLDER THAT CONTAINS main.py` with the actual path to your OMCP installation.
 
 ### Step 3: Launch Claude Desktop
 
