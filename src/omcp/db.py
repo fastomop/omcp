@@ -3,7 +3,7 @@ from ibis.backends import BaseBackend
 from ibis.backends.duckdb import Backend as DuckDBBackend
 from typing import Dict, List, Optional
 from sqlglot import expressions as exp
-from sqlglot import parse_one
+from sqlglot import parse_one, ParseError
 
 
 class OmopDatabase:
@@ -11,7 +11,13 @@ class OmopDatabase:
     A class for interacting with an OMOP database using the Ibis framework.
     """
 
-    def __init__(self, connection_string: str, read_only=True, allow_source_values: bool = False, allowed_tables: Optional[List[str]] = None):
+    def __init__(
+        self,
+        connection_string: str,
+        read_only=True,
+        allow_source_values: bool = False,
+        allowed_tables: Optional[List[str]] = None,
+    ):
         """
         Initialize the database connection.
 
@@ -37,60 +43,66 @@ class OmopDatabase:
         ]
         self.connection_string = connection_string
         self.row_limit = 1000  # Default row limit for queries
-        self.allowed_tables = allowed_tables if allowed_tables is not None else [
-            "care_site",
-            "cdm_source",
-            "concept",
-            "concept_ancestor",
-            "concept_class",
-            "concept_relationship",
-            "concept_synonym",
-            "condition_era",
-            "condition_occurrence",
-            "cost",
-            "death",
-            "device_exposure",
-            "domain",
-            "dose_era",
-            "drug_era",
-            "drug_exposure",
-            "drug_strength",
-            "episode",
-            "episode_event",
-            "fact_relationship",
-            "location",
-            "measurement",
-            "metadata",
-            "note",
-            "note_nlp",
-            "observation",
-            "observation_period",
-            "payer_plan_period",
-            "person",
-            "procedure_occurrence",
-            "provider",
-            "relationship",
-            "specimen",
-            "visit_detail",
-            "visit_occurrence",
-            "vocabulary"
-        ]
+        self.allowed_tables = (
+            allowed_tables
+            if allowed_tables is not None
+            else [
+                "care_site",
+                "cdm_source",
+                "concept",
+                "concept_ancestor",
+                "concept_class",
+                "concept_relationship",
+                "concept_synonym",
+                "condition_era",
+                "condition_occurrence",
+                "cost",
+                "death",
+                "device_exposure",
+                "domain",
+                "dose_era",
+                "drug_era",
+                "drug_exposure",
+                "drug_strength",
+                "episode",
+                "episode_event",
+                "fact_relationship",
+                "location",
+                "measurement",
+                "metadata",
+                "note",
+                "note_nlp",
+                "observation",
+                "observation_period",
+                "payer_plan_period",
+                "person",
+                "procedure_occurrence",
+                "provider",
+                "relationship",
+                "specimen",
+                "visit_detail",
+                "visit_occurrence",
+                "vocabulary",
+            ]
+        )
 
-        self.allow_source_values:bool = allow_source_values
+        self.allow_source_values: bool = allow_source_values
 
         try:
             # Parse connection string to determine database type and connect
             if connection_string.startswith("duckdb://"):
-            
                 import importlib.util
+
                 if not importlib.util.find_spec("ibis.backends.duckdb"):
-                    raise ImportError("The 'ibis.backends.duckdb' module is not installed. Please install it to use this backend.")
+                    raise ImportError(
+                        "The 'ibis.backends.duckdb' module is not installed. Please install it to use this backend."
+                    )
                 self.conn = ibis.duckdb.connect(
-                    connection_string.replace("duckdb://", ""), read_only=read_only 
+                    connection_string.replace("duckdb://", ""), read_only=read_only
                 )
             # Uncomment and modify the following lines to support other databases after testing
             # elif connection_string.startswith('postgresql://'):
-            
+
             #     self.conn: ibis.backends.postgres.Backend = ibis.postgres.connect(connection_string)
             # elif connection_string.startswith('mssql://') or connection_string.startswith('sqlserver://'):
             #     self.conn: ibis.backends.mssql.Backend = ibis.mssql.connect(connection_string)
@@ -128,7 +140,7 @@ class OmopDatabase:
             query += ";"  # Add the semicolon to terminate the SQL query
             df = self.conn.sql(query).execute()
             return df.to_csv(index=False)
-           
+
         except Exception as e:
             raise QueryError(f"Failed to get information schema: {str(e)}")
 
@@ -142,11 +154,33 @@ class OmopDatabase:
         Returns:
             CSV string representing query results
         """
+        if not query or not query.strip():
+            raise EmptyQueryError("Query cannot be empty")
+
         try:
-            parsed_query = parse_one(query)
+            try:
+                parsed_query = parse_one(query)
+            except ParseError as e:
+                raise SqlSyntaxError(f"SQL syntax error: {str(e)}")
+
             # Validate the query to ensure it's a SELECT statement
             if not isinstance(parsed_query, exp.Select):
-                raise ValueError("Query must be a SELECT statement.")
+                raise NotSelectQueryError(
+                    "Only SELECT statements are allowed for security reasons."
+                )
+
+            # Check for unauthorized tables
+            # This is a simple check and might need enhancement for complex queries
+            tables_in_query = self._extract_tables_from_query(parsed_query)
+            unauthorized_tables = [
+                table
+                for table in tables_in_query
+                if table.lower() not in [t.lower() for t in self.allowed_tables]
+            ]
+            if unauthorized_tables:
+                raise UnauthorizedTableError(
+                    f"Unauthorized tables in query: {', '.join(unauthorized_tables)}"
+                )
 
             # Execute the validated query
             result = self.conn.sql(query).limit(
@@ -155,36 +189,83 @@ class OmopDatabase:
             df = result.execute()
             # Convert dataframe to csv
             return df.to_csv(index=False)
+
+        except (
+            EmptyQueryError,
+            SqlSyntaxError,
+            NotSelectQueryError,
+            UnauthorizedTableError,
+        ):
+            # Re-raise specific errors without wrapping
+            raise
         except Exception as e:
-            raise QueryError(f"Failed to execute read query: {str(e)}")
+            if "no such column" in str(e).lower():
+                raise ColumnNotFoundError(f"Column not found: {str(e)}")
+            elif "no such table" in str(e).lower():
+                raise TableNotFoundError(f"Table not found: {str(e)}")
+            elif "ambiguous" in str(e).lower():
+                raise AmbiguousReferenceError(f"Ambiguous column reference: {str(e)}")
+            else:
+                raise QueryError(f"Failed to execute read query: {str(e)}")
 
-    # Potentially useful for future use.
-    # def execute_query(self, query: str) -> Optional[str]:
-    #     """
-    #     Execute any SQL query including INSERT, UPDATE, DELETE, etc.
-
-    #     Args:
-    #         query: Any SQL query string
-
-    #     Returns:
-    #         JSON results for SELECT queries, None for other query types
-    #     """
-    #     try:
-    #         # For SELECT queries, we can return results
-    #         if isinstance(parse_one(query), exp.Select):
-    #             result = self.conn.sql(query).limit(self.row_limit)  # Limit to 1000 rows for performance
-    #             df = result.execute()
-    #             # Convert dataframe to csv
-    #             return df.to_csv(index=False)
-    #         else:
-    #             # For non-SELECT queries, execute raw SQL with no return value expected
-    #             self.conn.raw_sql(query)
-    #             return None
-    #     except Exception as e:
-    #         raise QueryError(f"Failed to execute query: {str(e)}")
+    def _extract_tables_from_query(self, parsed_query) -> List[str]:
+        """Extract table names from a parsed query"""
+        tables = []
+        if hasattr(parsed_query, "args") and "from" in parsed_query.args:
+            from_clause = parsed_query.args["from"]
+            if isinstance(from_clause, list):
+                for item in from_clause:
+                    if hasattr(item, "name"):
+                        tables.append(item.name)
+            elif hasattr(from_clause, "name"):
+                tables.append(from_clause.name)
+        return tables
 
 
+# Define more specific error classes for better error handling
 class QueryError(Exception):
-    """Exception raised for errors in the query execution"""
+    """Base exception raised for errors in the query execution"""
+
+    pass
+
+
+class EmptyQueryError(QueryError):
+    """Exception raised when the query is empty"""
+
+    pass
+
+
+class SqlSyntaxError(QueryError):
+    """Exception raised for SQL syntax errors"""
+
+    pass
+
+
+class NotSelectQueryError(QueryError):
+    """Exception raised when a non-SELECT query is attempted"""
+
+    pass
+
+
+class UnauthorizedTableError(QueryError):
+    """Exception raised when query attempts to access unauthorized tables"""
+
+    pass
+
+
+class ColumnNotFoundError(QueryError):
+    """Exception raised when a column referenced in the query doesn't exist"""
+
+    pass
+
+
+class TableNotFoundError(QueryError):
+    """Exception raised when a table referenced in the query doesn't exist"""
+
+    pass
+
+
+class AmbiguousReferenceError(QueryError):
+    """Exception raised when a column reference is ambiguous"""
 
     pass
