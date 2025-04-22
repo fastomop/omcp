@@ -16,6 +16,7 @@ We appreciate your patience and feedback as we work toward a stable release!
 ### Prerequisites
 
 - [Git](https://git-scm.com/)
+- [Git LFS](https://git-lfs.com/)
 - [uv (Python package installer) ](https://docs.astral.sh/uv/)
     - On MacOS/Linux
     ```bash
@@ -27,7 +28,6 @@ We appreciate your patience and feedback as we work toward a stable release!
     ```
 
 - Python 3.13 or higher (Let UV install and manage python versions within a virtual environment)
-
 
 ### Step 1: Clone the Repository
 
@@ -48,7 +48,7 @@ uv sync --extra duckdb
 
 #### With PostgreSQL Support
 
-!!!warning
+!!! warning
     Not implemented yet.
 
 ```bash
@@ -61,10 +61,28 @@ uv sync --extra postgres
 source .venv/bin/activate  # On Windows use: .venv\Scripts\activate
 ```
 
-
 ## Using the Synthetic Database 🗄️
 
 OMCP comes with a synthetic OMOP database (located at `/synthetic_data/synthea.duckdb`) for testing and development purposes. This database follows the OMOP Common Data Model and contains fictional patient data available at [Synthea](https://synthetichealth.github.io/synthea/).
+
+### Retrieving Synthea.duckdb
+Since the database is a rather large file, the actual database has been replaced by a Git LFS pointer, you should see something like this inside `synthea.duckdb`:
+```
+version https://git-lfs.github.com/spec/v1
+oid sha256:d753b619a8650c966ce219daa35b4126fb9307b790e49f0244646cb3b796feab
+size 21508096
+```
+
+to retrieve the database:
+
+```bash
+git lfs install
+```
+and then:
+
+```bash
+git lfs pull
+```
 
 ### Setting Up the Environment Variable
 
@@ -114,7 +132,6 @@ OMCP provides a Model Context Protocol server that can integrate with Claude Des
 Download and install [Claude Desktop](https://claude.ai/download) from the official website.
 On Linux, use https://github.com/aaddrick/claude-desktop-debian/ or similar until an official release becomes available.
 
-
 ### Step 2: Configure Claude Desktop to Use OMCP
 
 1. Open or create the Claude Desktop configuration file:
@@ -123,11 +140,15 @@ On Linux, use https://github.com/aaddrick/claude-desktop-debian/ or similar unti
 # Linux
 mkdir -p ~/.config/Claude
 nano ~/.config/Claude/claude_desktop_config.json
+```
 
+```bash
 # macOS
 mkdir -p ~/Library/Application\ Support/Claude
 nano ~/Library/Application\ Support/Claude/claude_desktop_config.json
+```
 
+```cmd
 # Windows
 notepad %APPDATA%\Claude\claude_desktop_config.json
 ```
@@ -136,19 +157,21 @@ notepad %APPDATA%\Claude\claude_desktop_config.json
 
 ```json
 {
-    "mcpServers": {
-        "omop_mcp": {
-            "command": "mcp",
-            "args": [
-                "run",
-                "/path/to/omcp/src/omcp/main.py"
-            ]
-        }
+  "mcpServers": {
+    "omop_mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/ABSOLUTE/PATH/TO/PARENT/FOLDER THAT CONTAINS main.py",
+        "run",
+        "main.py"
+      ]
     }
+  }
 }
 ```
 
-Replace `/path/to/omcp` with the actual path to your OMCP installation.
+Replace `/ABSOLUTE/PATH/TO/PARENT/FOLDER THAT CONTAINS main.py` with the actual path to your OMCP installation.
 
 ### Step 3: Launch Claude Desktop
 
