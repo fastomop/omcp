@@ -1,0 +1,35 @@
+{
+  "server": {
+    "host": "0.0.0.0",
+    "port": 5433
+  },
+  "ollama": {
+    "api_url": "http://localhost:11434/api/generate",
+    "default_model": "codellama-7b"
+  },
+  "database": {
+    "connection_strings": {
+      "default": "postgresql://root:root@localhost:5432/postgres?options=-c%20search_path=omop_cdm",
+      "omop_sample": "postgresql://root:root@localhost:5432/postgres?options=-c%20search_path=omop_cdm",
+      "duckdb_omop" : "duckdb:///Users/niko/Downloads/synthea.duckdb"
+    },
+    "schema_directory": "schemas/"
+  },
+  "omop_cdm": {
+    "validation_rules": "omop_validation_rules.json"
+  },
+  "auth": {
+    "require_api_key": false,
+    "api_keys": ["dev_key_12345"]
+  },
+  "agents": {
+    "medical_expert": {
+      "url": "http://localhost:8001/expert",
+      "timeout": 30
+    },
+    "medical_validator": {
+      "url": "http://localhost:8002/validate",
+      "timeout": 15
+    }
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "required_tables": [
+    { "when": "patient", "name": "person" },
+    { "when": "diagnos", "name": "condition_occurrence" },
+    { "when": "medication", "name": "drug_exposure" },
+    { "when": "lab", "name": "measurement" },
+    { "when": "procedure", "name": "procedure_occurrence" },
+    { "when": "observation", "name": "observation" }
+  ],
+  "required_joins": [
+    { "table1": "condition_occurrence", "table2": "person", "condition": "condition_occurrence.person_id = person.person_id" },
+    { "table1": "drug_exposure", "table2": "person", "condition": "drug_exposure.person_id = person.person_id" },
+    { "table1": "measurement", "table2": "person", "condition": "measurement.person_id = person.person_id" },
+    { "table1": "observation", "table2": "person", "condition": "observation.person_id = person.person_id" },
+    { "table1": "procedure_occurrence", "table2": "person", "condition": "procedure_occurrence.person_id = person.person_id" },
+    { "table1": "visit_occurrence", "table2": "person", "condition": "visit_occurrence.person_id = person.person_id" },
+
+    { "table1": "condition_occurrence", "table2": "visit_occurrence", "condition": "condition_occurrence.visit_occurrence_id = visit_occurrence.visit_occurrence_id" },
+    { "table1": "drug_exposure", "table2": "visit_occurrence", "condition": "drug_exposure.visit_occurrence_id = visit_occurrence.visit_occurrence_id" },
+    { "table1": "measurement", "table2": "visit_occurrence", "condition": "measurement.visit_occurrence_id = visit_occurrence.visit_occurrence_id" },
+    { "table1": "procedure_occurrence", "table2": "visit_occurrence", "condition": "procedure_occurrence.visit_occurrence_id = visit_occurrence.visit_occurrence_id" },
+    { "table1": "observation", "table2": "visit_occurrence", "condition": "observation.visit_occurrence_id = visit_occurrence.visit_occurrence_id" },
+
+    { "table1": "person", "table2": "concept", "condition": "person.gender_concept_id = concept.concept_id" },
+
+    { "table1": "condition_occurrence", "table2": "concept", "condition": "condition_occurrence.condition_concept_id = concept.concept_id" },
+    { "table1": "drug_exposure", "table2": "concept", "condition": "drug_exposure.drug_concept_id = concept.concept_id" },
+    { "table1": "measurement", "table2": "concept", "condition": "measurement.measurement_concept_id = concept.concept_id" },
+    { "table1": "procedure_occurrence", "table2": "concept", "condition": "procedure_occurrence.procedure_concept_id = concept.concept_id" },
+    { "table1": "observation", "table2": "concept", "condition": "observation.observation_concept_id = concept.concept_id" },
+
+    { "table1": "visit_occurrence", "table2": "concept", "condition": "visit_occurrence.visit_concept_id = concept.concept_id" }
+  ],
+  "required_columns": [
+    {
+      "table": "person",
+      "columns": ["person_id", "gender_concept_id", "year_of_birth"]
+    },
+    {
+      "table": "condition_occurrence",
+      "columns": ["condition_occurrence_id", "person_id", "condition_concept_id", "condition_start_date"]
+    },
+    {
+      "table": "drug_exposure",
+      "columns": ["drug_exposure_id", "person_id", "drug_concept_id", "drug_exposure_start_date"]
+    },
+    {
+      "table": "measurement",
+      "columns": ["measurement_id", "person_id", "measurement_concept_id", "measurement_date"]
+    },
+    {
+      "table": "procedure_occurrence",
+      "columns": ["procedure_occurrence_id", "person_id", "procedure_concept_id", "procedure_date"]
+    },
+    {
+      "table": "observation",
+      "columns": ["observation_id", "person_id", "observation_concept_id", "observation_date"]
+    },
+    {
+      "table": "visit_occurrence",
+      "columns": ["visit_occurrence_id", "person_id", "visit_concept_id", "visit_start_date"]
+    }
+  ]
+}
