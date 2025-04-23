@@ -1,5 +1,6 @@
 import json
-from typing import Dict, Any
+import requests
+from typing import Dict, Any, Tuple
 import re
 
 from app.core.config import settings
@@ -12,6 +13,8 @@ class ValidationService:
 
     def __init__(self):
         self.validation_rules = self._load_validation_rules()
+        self.validator_url = settings.agents["medical_validator"]["url"]
+        self.timeout = settings.agents["medical_validator"]["timeout"]
 
     def _load_validation_rules(self) -> Dict[str, Any]:
         """Load validation rules from file"""
@@ -27,8 +30,43 @@ class ValidationService:
                 "concept_tables": []
             }
 
-    def validate_query(self, sql_query: str) -> ValidationResult:
-        """Validate a SQL query against OMOP CDM rules"""
+    def validate_query(self, sql_query: str) -> Tuple[bool, list]:
+        """Validate a SQL query against OMOP CDM rules and using the validator agent"""
+        # First, perform local validation of domain-specific rules
+        validation = self._local_validation(sql_query)
+
+        # If local validation fails, no need to call the agent
+        if not validation.is_valid:
+            return validation.is_valid, validation.issues
+
+        # Then, perform syntax validation with the validator agent
+        agent_valid, agent_issues = self._agent_validation(sql_query)
+        if not agent_valid:
+            validation.is_valid = False
+            validation.issues.extend(agent_issues)
+
+        return validation.is_valid, validation.issues
+
+    def _agent_validation(self, sql_query: str) -> Tuple[bool, list]:
+        """Call the external validator agent for SQL syntax validation"""
+        try:
+            response = requests.post(
+                self.validator_url,
+                json={"query": sql_query},
+                timeout=self.timeout
+            )
+            response.raise_for_status()
+            result = response.json()
+            return result.get("is_valid", False), result.get("issues", [])
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Validator agent request error: {e}")
+            return False, [f"SQL syntax validation failed: {str(e)}"]
+        except Exception as e:
+            logger.error(f"Validator agent error: {e}")
+            return False, [f"SQL validation error: {str(e)}"]
+
+    def _local_validation(self, sql_query: str) -> ValidationResult:
+        """Perform local rule-based validation"""
         # Initialize validation result
         validation = ValidationResult(is_valid=True, issues=[])
 
@@ -94,6 +132,18 @@ class ValidationService:
         if any(term in sql_lower for term in ["date", "datetime", "time"]):
             if not any(term in sql_lower for term in ["between", ">", "<", ">=", "<="]):
                 validation.issues.append("Warning: Temporal query without date range filter")
+
+        # Check for basic SQL syntax issues (unbalanced parentheses, missing quotes)
+        if sql_query.count('(') != sql_query.count(')'):
+            validation.is_valid = False
+            validation.issues.append("SQL syntax error: Unbalanced parentheses")
+
+        # Check for unclosed quotes
+        quote_chars = ["'", '"']
+        for quote in quote_chars:
+            if sql_query.count(quote) % 2 != 0:
+                validation.is_valid = False
+                validation.issues.append(f"SQL syntax error: Unclosed {quote} quotes")
 
         return validation
 
