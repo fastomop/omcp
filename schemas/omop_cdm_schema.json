@@ -1,0 +1,520 @@
+{
+  "tables": [
+    {
+      "name": "cohort_definition",
+      "columns": [
+        {"name": "cohort_definition_id", "type": "INT64", "required": true},
+        {"name": "cohort_definition_name", "type": "STRING", "required": true},
+        {"name": "cohort_definition_description", "type": "STRING", "required": false},
+        {"name": "definition_type_concept_id", "type": "INT64", "required": true},
+        {"name": "cohort_definition_syntax", "type": "STRING", "required": false},
+        {"name": "subject_concept_id", "type": "INT64", "required": true},
+        {"name": "cohort_initiation_date", "type": "DATE", "required": false}
+      ]
+    },
+    {
+      "name": "attribute_definition",
+      "columns": [
+        {"name": "attribute_definition_id", "type": "INT64", "required": true},
+        {"name": "attribute_name", "type": "STRING", "required": true},
+        {"name": "attribute_description", "type": "STRING", "required": false},
+        {"name": "attribute_type_concept_id", "type": "INT64", "required": true},
+        {"name": "attribute_syntax", "type": "STRING", "required": false}
+      ]
+    },
+    {
+      "name": "cdm_source",
+      "columns": [
+        {"name": "cdm_source_name", "type": "STRING", "required": true},
+        {"name": "cdm_source_abbreviation", "type": "STRING", "required": false},
+        {"name": "cdm_holder", "type": "STRING", "required": false},
+        {"name": "source_description", "type": "STRING", "required": false},
+        {"name": "source_documentation_reference", "type": "STRING", "required": false},
+        {"name": "cdm_etl_reference", "type": "STRING", "required": false},
+        {"name": "source_release_date", "type": "DATE", "required": false},
+        {"name": "cdm_release_date", "type": "DATE", "required": false},
+        {"name": "cdm_version", "type": "STRING", "required": false},
+        {"name": "vocabulary_version", "type": "STRING", "required": false}
+      ]
+    },
+    {
+      "name": "metadata",
+      "columns": [
+        {"name": "metadata_concept_id", "type": "INT64", "required": true},
+        {"name": "metadata_type_concept_id", "type": "INT64", "required": true},
+        {"name": "name", "type": "STRING", "required": true},
+        {"name": "value_as_string", "type": "STRING", "required": false},
+        {"name": "value_as_concept_id", "type": "INT64", "required": false},
+        {"name": "metadata_date", "type": "DATE", "required": false},
+        {"name": "metadata_datetime", "type": "DATETIME", "required": false}
+      ]
+    },
+    {
+      "name": "person",
+      "columns": [
+        {"name": "person_id", "type": "INT64", "required": true},
+        {"name": "gender_concept_id", "type": "INT64", "required": true},
+        {"name": "year_of_birth", "type": "INT64", "required": true},
+        {"name": "month_of_birth", "type": "INT64", "required": false},
+        {"name": "day_of_birth", "type": "INT64", "required": false},
+        {"name": "birth_datetime", "type": "DATETIME", "required": false},
+        {"name": "race_concept_id", "type": "INT64", "required": true},
+        {"name": "ethnicity_concept_id", "type": "INT64", "required": true},
+        {"name": "location_id", "type": "INT64", "required": false},
+        {"name": "provider_id", "type": "INT64", "required": false},
+        {"name": "care_site_id", "type": "INT64", "required": false},
+        {"name": "person_source_value", "type": "STRING", "required": false},
+        {"name": "gender_source_value", "type": "STRING", "required": false},
+        {"name": "gender_source_concept_id", "type": "INT64", "required": false},
+        {"name": "race_source_value", "type": "STRING", "required": false},
+        {"name": "race_source_concept_id", "type": "INT64", "required": false},
+        {"name": "ethnicity_source_value", "type": "STRING", "required": false},
+        {"name": "ethnicity_source_concept_id", "type": "INT64", "required": false}
+      ]
+    },
+    {
+      "name": "observation_period",
+      "columns": [
+        {"name": "observation_period_id", "type": "INT64", "required": true},
+        {"name": "person_id", "type": "INT64", "required": true},
+        {"name": "observation_period_start_date", "type": "DATE", "required": true},
+        {"name": "observation_period_end_date", "type": "DATE", "required": true},
+        {"name": "period_type_concept_id", "type": "INT64", "required": true}
+      ]
+    },
+    {
+      "name": "specimen",
+      "columns": [
+        {"name": "specimen_id", "type": "INT64", "required": true},
+        {"name": "person_id", "type": "INT64", "required": true},
+        {"name": "specimen_concept_id", "type": "INT64", "required": true},
+        {"name": "specimen_type_concept_id", "type": "INT64", "required": true},
+        {"name": "specimen_date", "type": "DATE", "required": true},
+        {"name": "specimen_datetime", "type": "DATETIME", "required": false},
+        {"name": "quantity", "type": "FLOAT64", "required": false},
+        {"name": "unit_concept_id", "type": "INT64", "required": false},
+        {"name": "anatomic_site_concept_id", "type": "INT64", "required": false},
+        {"name": "disease_status_concept_id", "type": "INT64", "required": false},
+        {"name": "specimen_source_id", "type": "STRING", "required": false},
+        {"name": "specimen_source_value", "type": "STRING", "required": false},
+        {"name": "unit_source_value", "type": "STRING", "required": false},
+        {"name": "anatomic_site_source_value", "type": "STRING", "required": false},
+        {"name": "disease_status_source_value", "type": "STRING", "required": false}
+      ]
+    },
+    {
+      "name": "death",
+      "columns": [
+        {"name": "person_id", "type": "INT64", "required": true},
+        {"name": "death_date", "type": "DATE", "required": true},
+        {"name": "death_datetime", "type": "DATETIME", "required": false},
+        {"name": "death_type_concept_id", "type": "INT64", "required": true},
+        {"name": "cause_concept_id", "type": "INT64", "required": false},
+        {"name": "cause_source_value", "type": "STRING", "required": false},
+        {"name": "cause_source_concept_id", "type": "INT64", "required": false}
+      ]
+    },
+    {
+      "name": "visit_occurrence",
+      "columns": [
+        {"name": "visit_occurrence_id", "type": "INT64", "required": true},
+        {"name": "person_id", "type": "INT64", "required": true},
+        {"name": "visit_concept_id", "type": "INT64", "required": true},
+        {"name": "visit_start_date", "type": "DATE", "required": true},
+        {"name": "visit_start_datetime", "type": "DATETIME", "required": false},
+        {"name": "visit_end_date", "type": "DATE", "required": true},
+        {"name": "visit_end_datetime", "type": "DATETIME", "required": false},
+        {"name": "visit_type_concept_id", "type": "INT64", "required": true},
+        {"name": "provider_id", "type": "INT64", "required": false},
+        {"name": "care_site_id", "type": "INT64", "required": false},
+        {"name": "visit_source_value", "type": "STRING", "required": false},
+        {"name": "visit_source_concept_id", "type": "INT64", "required": false},
+        {"name": "admitting_source_concept_id", "type": "INT64", "required": false},
+        {"name": "admitting_source_value", "type": "STRING", "required": false},
+        {"name": "discharge_to_concept_id", "type": "INT64", "required": false},
+        {"name": "discharge_to_source_value", "type": "STRING", "required": false},
+        {"name": "preceding_visit_occurrence_id", "type": "INT64", "required": false}
+      ]
+    },
+    {
+      "name": "visit_detail",
+      "columns": [
+        {"name": "visit_detail_id", "type": "INT64", "required": true},
+        {"name": "person_id", "type": "INT64", "required": true},
+        {"name": "visit_detail_concept_id", "type": "INT64", "required": true},
+        {"name": "visit_detail_start_date", "type": "DATE", "required": true},
+        {"name": "visit_detail_start_datetime", "type": "DATETIME", "required": false},
+        {"name": "visit_detail_end_date", "type": "DATE", "required": true},
+        {"name": "visit_detail_end_datetime", "type": "DATETIME", "required": false},
+        {"name": "visit_detail_type_concept_id", "type": "INT64", "required": true},
+        {"name": "provider_id", "type": "INT64", "required": false},
+        {"name": "care_site_id", "type": "INT64", "required": false},
+        {"name": "admitting_source_concept_id", "type": "INT64", "required": false},
+        {"name": "discharge_to_concept_id", "type": "INT64", "required": false},
+        {"name": "preceding_visit_detail_id", "type": "INT64", "required": false},
+        {"name": "visit_detail_source_value", "type": "STRING", "required": false},
+        {"name": "visit_detail_source_concept_id", "type": "INT64", "required": false},
+        {"name": "admitting_source_value", "type": "STRING", "required": false},
+        {"name": "discharge_to_source_value", "type": "STRING", "required": false},
+        {"name": "visit_detail_parent_id", "type": "INT64", "required": false},
+        {"name": "visit_occurrence_id", "type": "INT64", "required": true}
+      ]
+    },
+    {
+      "name": "procedure_occurrence",
+      "columns": [
+        {"name": "procedure_occurrence_id", "type": "INT64", "required": true},
+        {"name": "person_id", "type": "INT64", "required": true},
+        {"name": "procedure_concept_id", "type": "INT64", "required": true},
+        {"name": "procedure_date", "type": "DATE", "required": true},
+        {"name": "procedure_datetime", "type": "DATETIME", "required": false},
+        {"name": "procedure_type_concept_id", "type": "INT64", "required": true},
+        {"name": "modifier_concept_id", "type": "INT64", "required": false},
+        {"name": "quantity", "type": "INT64", "required": false},
+        {"name": "provider_id", "type": "INT64", "required": false},
+        {"name": "visit_occurrence_id", "type": "INT64", "required": false},
+        {"name": "visit_detail_id", "type": "INT64", "required": false},
+        {"name": "procedure_source_value", "type": "STRING", "required": false},
+        {"name": "procedure_source_concept_id", "type": "INT64", "required": false},
+        {"name": "modifier_source_value", "type": "STRING", "required": false}
+      ]
+    },
+    {
+      "name": "drug_exposure",
+      "columns": [
+        {"name": "drug_exposure_id", "type": "INT64", "required": true},
+        {"name": "person_id", "type": "INT64", "required": true},
+        {"name": "drug_concept_id", "type": "INT64", "required": true},
+        {"name": "drug_exposure_start_date", "type": "DATE", "required": true},
+        {"name": "drug_exposure_start_datetime", "type": "DATETIME", "required": false},
+        {"name": "drug_exposure_end_date", "type": "DATE", "required": true},
+        {"name": "drug_exposure_end_datetime", "type": "DATETIME", "required": false},
+        {"name": "verbatim_end_date", "type": "DATE", "required": false},
+        {"name": "drug_type_concept_id", "type": "INT64", "required": true},
+        {"name": "stop_reason", "type": "STRING", "required": false},
+        {"name": "refills", "type": "INT64", "required": false},
+        {"name": "quantity", "type": "FLOAT64", "required": false},
+        {"name": "days_supply", "type": "INT64", "required": false},
+        {"name": "sig", "type": "STRING", "required": false},
+        {"name": "route_concept_id", "type": "INT64", "required": false},
+        {"name": "lot_number", "type": "STRING", "required": false},
+        {"name": "provider_id", "type": "INT64", "required": false},
+        {"name": "visit_occurrence_id", "type": "INT64", "required": false},
+        {"name": "visit_detail_id", "type": "INT64", "required": false},
+        {"name": "drug_source_value", "type": "STRING", "required": false},
+        {"name": "drug_source_concept_id", "type": "INT64", "required": false},
+        {"name": "route_source_value", "type": "STRING", "required": false},
+        {"name": "dose_unit_source_value", "type": "STRING", "required": false}
+      ]
+    },
+    {
+      "name": "device_exposure",
+      "columns": [
+        {"name": "device_exposure_id", "type": "INT64", "required": true},
+        {"name": "person_id", "type": "INT64", "required": true},
+        {"name": "device_concept_id", "type": "INT64", "required": true},
+        {"name": "device_exposure_start_date", "type": "DATE", "required": true},
+        {"name": "device_exposure_start_datetime", "type": "DATETIME", "required": false},
+        {"name": "device_exposure_end_date", "type": "DATE", "required": false},
+        {"name": "device_exposure_end_datetime", "type": "DATETIME", "required": false},
+        {"name": "device_type_concept_id", "type": "INT64", "required": true},
+        {"name": "unique_device_id", "type": "STRING", "required": false},
+        {"name": "quantity", "type": "INT64", "required": false},
+        {"name": "provider_id", "type": "INT64", "required": false},
+        {"name": "visit_occurrence_id", "type": "INT64", "required": false},
+        {"name": "visit_detail_id", "type": "INT64", "required": false},
+        {"name": "device_source_value", "type": "STRING", "required": false},
+        {"name": "device_source_concept_id", "type": "INT64", "required": false}
+      ]
+    },
+    {
+      "name": "condition_occurrence",
+      "columns": [
+        {"name": "condition_occurrence_id", "type": "INT64", "required": true},
+        {"name": "person_id", "type": "INT64", "required": true},
+        {"name": "condition_concept_id", "type": "INT64", "required": true},
+        {"name": "condition_start_date", "type": "DATE", "required": true},
+        {"name": "condition_start_datetime", "type": "DATETIME", "required": false},
+        {"name": "condition_end_date", "type": "DATE", "required": false},
+        {"name": "condition_end_datetime", "type": "DATETIME", "required": false},
+        {"name": "condition_type_concept_id", "type": "INT64", "required": true},
+        {"name": "stop_reason", "type": "STRING", "required": false},
+        {"name": "provider_id", "type": "INT64", "required": false},
+        {"name": "visit_occurrence_id", "type": "INT64", "required": false},
+        {"name": "visit_detail_id", "type": "INT64", "required": false},
+        {"name": "condition_source_value", "type": "STRING", "required": false},
+        {"name": "condition_source_concept_id", "type": "INT64", "required": false},
+        {"name": "condition_status_source_value", "type": "STRING", "required": false},
+        {"name": "condition_status_concept_id", "type": "INT64", "required": false}
+      ]
+    },
+    {
+      "name": "measurement",
+      "columns": [
+        {"name": "measurement_id", "type": "INT64", "required": true},
+        {"name": "person_id", "type": "INT64", "required": true},
+        {"name": "measurement_concept_id", "type": "INT64", "required": true},
+        {"name": "measurement_date", "type": "DATE", "required": true},
+        {"name": "measurement_datetime", "type": "DATETIME", "required": false},
+        {"name": "measurement_time", "type": "STRING", "required": false},
+        {"name": "measurement_type_concept_id", "type": "INT64", "required": true},
+        {"name": "operator_concept_id", "type": "INT64", "required": false},
+        {"name": "value_as_number", "type": "FLOAT64", "required": false},
+        {"name": "value_as_concept_id", "type": "INT64", "required": false},
+        {"name": "unit_concept_id", "type": "INT64", "required": false},
+        {"name": "range_low", "type": "FLOAT64", "required": false},
+        {"name": "range_high", "type": "FLOAT64", "required": false},
+        {"name": "provider_id", "type": "INT64", "required": false},
+        {"name": "visit_occurrence_id", "type": "INT64", "required": false},
+        {"name": "visit_detail_id", "type": "INT64", "required": false},
+        {"name": "measurement_source_value", "type": "STRING", "required": false},
+        {"name": "measurement_source_concept_id", "type": "INT64", "required": false},
+        {"name": "unit_source_value", "type": "STRING", "required": false},
+        {"name": "value_source_value", "type": "STRING", "required": false}
+      ]
+    },
+    {
+      "name": "note",
+      "columns": [
+        {"name": "note_id", "type": "INT64", "required": true},
+        {"name": "person_id", "type": "INT64", "required": true},
+        {"name": "note_date", "type": "DATE", "required": true},
+        {"name": "note_datetime", "type": "DATETIME", "required": false},
+        {"name": "note_type_concept_id", "type": "INT64", "required": true},
+        {"name": "note_class_concept_id", "type": "INT64", "required": true},
+        {"name": "note_title", "type": "STRING", "required": false},
+        {"name": "note_text", "type": "STRING", "required": false},
+        {"name": "encoding_concept_id", "type": "INT64", "required": true},
+        {"name": "language_concept_id", "type": "INT64", "required": true},
+        {"name": "provider_id", "type": "INT64", "required": false},
+        {"name": "visit_occurrence_id", "type": "INT64", "required": false},
+        {"name": "visit_detail_id", "type": "INT64", "required": false},
+        {"name": "note_source_value", "type": "STRING", "required": false}
+      ]
+    },
+    {
+      "name": "note_nlp",
+      "columns": [
+        {"name": "note_nlp_id", "type": "INT64", "required": false},
+        {"name": "note_id", "type": "INT64", "required": false},
+        {"name": "section_concept_id", "type": "INT64", "required": false},
+        {"name": "snippet", "type": "STRING", "required": false},
+        {"name": "offset", "type": "STRING", "required": false},
+        {"name": "lexical_variant", "type": "STRING", "required": true},
+        {"name": "note_nlp_concept_id", "type": "INT64", "required": false},
+        {"name": "note_nlp_source_concept_id", "type": "INT64", "required": false},
+        {"name": "nlp_system", "type": "STRING", "required": false},
+        {"name": "nlp_date", "type": "DATE", "required": true},
+        {"name": "nlp_datetime", "type": "DATETIME", "required": false},
+        {"name": "term_exists", "type": "STRING", "required": false},
+        {"name": "term_temporal", "type": "STRING", "required": false},
+        {"name": "term_modifiers", "type": "STRING", "required": false}
+      ]
+    },
+    {
+      "name": "observation",
+      "columns": [
+        {"name": "observation_id", "type": "INT64", "required": true},
+        {"name": "person_id", "type": "INT64", "required": true},
+        {"name": "observation_concept_id", "type": "INT64", "required": true},
+        {"name": "observation_date", "type": "DATE", "required": true},
+        {"name": "observation_datetime", "type": "DATETIME", "required": false},
+        {"name": "observation_type_concept_id", "type": "INT64", "required": true},
+        {"name": "value_as_number", "type": "FLOAT64", "required": false},
+        {"name": "value_as_string", "type": "STRING", "required": false},
+        {"name": "value_as_concept_id", "type": "INT64", "required": false},
+        {"name": "qualifier_concept_id", "type": "INT64", "required": false},
+        {"name": "unit_concept_id", "type": "INT64", "required": false},
+        {"name": "provider_id", "type": "INT64", "required": false},
+        {"name": "visit_occurrence_id", "type": "INT64", "required": false},
+        {"name": "visit_detail_id", "type": "INT64", "required": false},
+        {"name": "observation_source_value", "type": "STRING", "required": false},
+        {"name": "observation_source_concept_id", "type": "INT64", "required": false},
+        {"name": "unit_source_value", "type": "STRING", "required": false},
+        {"name": "qualifier_source_value", "type": "STRING", "required": false}
+      ]
+    },
+    {
+      "name": "fact_relationship",
+      "columns": [
+        {"name": "domain_concept_id_1", "type": "INT64", "required": true},
+        {"name": "fact_id_1", "type": "INT64", "required": true},
+        {"name": "domain_concept_id_2", "type": "INT64", "required": true},
+        {"name": "fact_id_2", "type": "INT64", "required": true},
+        {"name": "relationship_concept_id", "type": "INT64", "required": true}
+      ]
+    },
+    {
+      "name": "location",
+      "columns": [
+        {"name": "location_id", "type": "INT64", "required": true},
+        {"name": "address_1", "type": "STRING", "required": false},
+        {"name": "address_2", "type": "STRING", "required": false},
+        {"name": "city", "type": "STRING", "required": false},
+        {"name": "state", "type": "STRING", "required": false},
+        {"name": "zip", "type": "STRING", "required": false},
+        {"name": "county", "type": "STRING", "required": false},
+        {"name": "location_source_value", "type": "STRING", "required": false}
+      ]
+    },
+    {
+      "name": "care_site",
+      "columns": [
+        {"name": "care_site_id", "type": "INT64", "required": true},
+        {"name": "care_site_name", "type": "STRING", "required": false},
+        {"name": "place_of_service_concept_id", "type": "INT64", "required": false},
+        {"name": "location_id", "type": "INT64", "required": false},
+        {"name": "care_site_source_value", "type": "STRING", "required": false},
+        {"name": "place_of_service_source_value", "type": "STRING", "required": false}
+      ]
+    },
+    {
+      "name": "concept",
+      "columns": [
+        {"name": "concept_id", "type": "INT64", "required": true},
+        {"name": "concept_name", "type": "STRING", "required": true},
+        {"name": "domain_id", "type": "STRING", "required": true},
+        {"name": "vocabulary_id", "type": "STRING", "required": true},
+        {"name": "concept_class_id", "type": "STRING", "required": true},
+        {"name": "standard_concept", "type": "STRING", "required": false},
+        {"name": "concept_code", "type": "STRING", "required": false},
+        {"name": "valid_start_date", "type": "DATE", "required": false},
+        {"name": "valid_end_date", "type": "DATE", "required": false},
+        {"name": "invalid_reason", "type": "STRING", "required": false}
+      ]
+    },
+    {
+      "name": "concept_ancestor",
+      "columns": [
+        {"name": "ancestor_concept_id", "type": "INT64", "required": true},
+        {"name": "descendant_concept_id", "type": "INT64", "required": true},
+        {"name": "min_levels_of_separation", "type": "INT64", "required": true},
+        {"name": "max_levels_of_separation", "type": "INT64", "required": true},
+        {"name": "distance", "type": "INT64", "required": false}
+      ]
+    },
+    {
+      "name": "concept_relationship",
+      "columns": [
+        {"name": "concept_id_1", "type": "INT64", "required": true},
+        {"name": "concept_id_2", "type": "INT64", "required": true},
+        {"name": "relationship_id", "type": "STRING", "required": true},
+        {"name": "valid_start_date", "type": "DATE", "required": false},
+        {"name": "valid_end_date", "type": "DATE", "required": false},
+        {"name": "invalid_reason", "type": "STRING", "required": false}
+      ]
+    },
+    {
+      "name": "drug_strength",
+      "columns": [
+        {"name": "drug_concept_id", "type": "INT64", "required": true},
+        {"name": "ingredient_concept_id", "type": "INT64", "required": true},
+        {"name": "amount_value", "type": "FLOAT64", "required": false},
+        {"name": "amount_unit_concept_id", "type": "INT64", "required": false},
+        {"name": "numerator_value", "type": "FLOAT64", "required": false},
+        {"name": "denominator_value", "type": "FLOAT64", "required": false}
+      ]
+    }
+    ],
+  "relationships": [
+  {
+    "source_table": "person",
+    "target_table": "condition_occurrence",
+    "relationship": "one_to_many",
+    "join_columns": {"person_id": "person_id"}
+  },
+  {
+    "source_table": "person",
+    "target_table": "drug_exposure",
+    "relationship": "one_to_many",
+    "join_columns": {"person_id": "person_id"}
+  },
+  {
+    "source_table": "person",
+    "target_table": "measurement",
+    "relationship": "one_to_many",
+    "join_columns": {"person_id": "person_id"}
+  },
+  {
+    "source_table": "visit_occurrence",
+    "target_table": "condition_occurrence",
+    "relationship": "one_to_many",
+    "join_columns": {"visit_occurrence_id": "visit_occurrence_id"}
+  },
+  {
+    "source_table": "visit_occurrence",
+    "target_table": "procedure_occurrence",
+    "relationship": "one_to_many",
+    "join_columns": {"visit_occurrence_id": "visit_occurrence_id"}
+  }
+  ],
+  "common_joins": [
+  {
+    "name": "patient_conditions",
+    "description": "Find conditions for patients",
+    "tables": ["person", "condition_occurrence"],
+    "sql_pattern": "FROM person p JOIN condition_occurrence co ON p.person_id = co.person_id"
+  },
+  {
+    "name": "patient_medications",
+    "description": "Find medications for patients",
+    "tables": ["person", "drug_exposure"],
+    "sql_pattern": "FROM person p JOIN drug_exposure de ON p.person_id = de.person_id"
+  },
+  {
+    "name": "inpatient_visits",
+    "description": "Find inpatient visits",
+    "tables": ["visit_occurrence"],
+    "sql_pattern": "FROM visit_occurrence v WHERE v.visit_concept_id = 9201"
+  },
+  {
+    "name": "measurements_during_visit",
+    "description": "Find measurements recorded during visits",
+    "tables": ["visit_occurrence", "measurement"],
+    "sql_pattern": "FROM visit_occurrence v JOIN measurement m ON v.visit_occurrence_id = m.visit_occurrence_id"
+  }
+  ],
+  "concept_hierarchies": {
+  "condition_concept_id": {
+    "description": "Standardized vocabulary for conditions/diseases",
+    "primary_vocabularies": ["SNOMED", "ICD10CM", "ICD9CM"],
+    "common_ancestors": {
+      "diabetes": 201820,
+      "hypertension": 316866,
+      "heart_disease": 321588
+    }
+  },
+  "drug_concept_id": {
+    "description": "Standardized vocabulary for medications",
+    "primary_vocabularies": ["RxNorm", "RxNorm Extension"],
+    "common_ancestors": {
+      "antibiotics": 21602796,
+      "analgesics": 21003978,
+      "antihypertensives": 21600381
+    }
+  },
+  "measurement_concept_id": {
+    "description": "Standardized vocabulary for lab tests and measurements",
+    "primary_vocabularies": ["LOINC"],
+    "common_concepts": {
+      "blood_pressure": 4254892,
+      "glucose": 3004501,
+      "bmi": 3038553
+    }
+  }
+},
+  "example_queries": [
+  {
+    "question": "Find patients with type 2 diabetes",
+    "sql": "SELECT p.person_id, p.year_of_birth, p.gender_concept_id FROM person p JOIN condition_occurrence co ON p.person_id = co.person_id WHERE co.condition_concept_id IN (SELECT concept_id FROM concept WHERE concept_id = 201826 OR concept_id IN (SELECT c.concept_id FROM concept c JOIN concept_ancestor ca ON c.concept_id = ca.descendant_concept_id WHERE ca.ancestor_concept_id = 201826))"
+  },
+  {
+    "question": "Count patients by year of birth",
+    "sql": "SELECT year_of_birth, COUNT(*) as patient_count FROM person GROUP BY year_of_birth ORDER BY year_of_birth"
+  },
+  {
+    "question": "Find average systolic blood pressure by gender",
+    "sql": "SELECT p.gender_concept_id, AVG(m.value_as_number) as avg_systolic_bp FROM person p JOIN measurement m ON p.person_id = m.person_id WHERE m.measurement_concept_id = 3004249 GROUP BY p.gender_concept_id"
+  }
+]
+}

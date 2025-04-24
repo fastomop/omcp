@@ -44,6 +44,8 @@ class OllamaService:
     3. Use appropriate date ranges for temporal queries
     4. Remember that most clinical data is in condition_occurrence, drug_exposure, measurement, and observation tables
     5. Make sure to handle NULL values appropriately
+    6. Use concept_id for filtering and joining with the concept table
+    7. Don't include any unnecessary complexity or additional features in the SQL query
     """
 
         # Prepare the request for Ollama
@@ -133,6 +135,110 @@ class OllamaService:
         # Final fallback - return a simple safe query
         logger.warning(f"Could not extract SQL from text: {text}")
         return "SELECT 1 AS dummy"
+
+    async def refine_sql_with_omop_knowledge(self, sql_query: str, validation_issues: list,
+                                             model_name: Optional[str] = None) -> Tuple[str, float]:
+        """
+        Refine a SQL query that failed OMOP CDM validation by using LLM with OMOP domain knowledge
+
+        Args:
+            sql_query: The original SQL query that failed validation
+            validation_issues: List of validation issues identified
+            model_name: Optional model name to use for refinement
+
+        Returns:
+            Tuple of (refined_sql, confidence_score)
+        """
+        try:
+            model = model_name or self.default_model
+
+            # Create a comprehensive prompt with OMOP knowledge
+            issues_text = "\n".join([f"- {issue}" for issue in validation_issues])
+
+            # Add specific OMOP CDM guidance
+            omop_guidance = """
+            OMOP CDM SQL Guidelines:
+            1. Use person.gender_concept_id (8507=male, 8532=female) instead of a 'gender' column
+            2. Always JOIN tables before referencing their columns (person, condition_occurrence, etc.)
+            3. For conditions like diabetes, join condition_occurrence and use condition_concept_id
+            4. For medications, join drug_exposure and use drug_concept_id
+            5. For measurements, join measurement and use measurement_concept_id
+            6. Always include appropriate person_id joins between clinical tables
+            7. Use concept table to translate between concept names and IDs
+            8. Include proper date filters on temporal data (using BETWEEN, >, <, etc.)
+            9. Remember that most clinical data is in condition_occurrence, drug_exposure, measurement, and observation tables
+            10. Use proper table aliases if needed, e.g., 'p' for person, 'co' for condition_occurrence
+            """
+
+            prompt = f"""
+            You are an OMOP CDM SQL expert. The following SQL query has validation issues:
+
+            ```sql
+            {sql_query}
+            ```
+
+            Validation issues:
+            {issues_text}
+
+            {omop_guidance}
+
+            Please fix the SQL query to resolve these issues. The query should be valid SQL that follows OMOP CDM best practices.
+
+            Return ONLY the corrected SQL query without any explanations or markdown.
+            """
+
+            # Use system prompt to reinforce OMOP expertise
+            system_prompt = """You are an expert in SQL and healthcare data analysis, specifically working with the OMOP Common Data Model (CDM).
+            Your task is to fix SQL queries that don't comply with OMOP CDM standards. Return ONLY the fixed SQL query without any explanation."""
+
+            # Call the LLM
+            logger.info(f"Attempting to refine SQL query with LLM using model {model}")
+
+            # Set options for more deterministic output
+            options = {
+                "temperature": 0.1,  ## Achtung: Low temperature for more deterministic output
+                "top_p": 0.9,
+                "max_tokens": 1000
+            }
+
+            # Use the Ollama API
+            ollama_request = {
+                "model": model,
+                "prompt": prompt,
+                "system": system_prompt,
+                "stream": False,
+                **options
+            }
+
+            # Use async HTTP for the request
+            import httpx
+            async with httpx.AsyncClient() as client:
+                response = await client.post(self.api_url, json=ollama_request, timeout=240)
+                response.raise_for_status()
+
+                # Extract the generated response
+                result = response.json()
+                refined_sql = result["response"].strip()
+
+                # Extract SQL from the response (remove any markdown or explanations)
+                refined_sql = self._extract_sql_from_text(refined_sql)
+
+                # Fix common OMOP SQL errors (if you've implemented this method)
+                if hasattr(self, 'fix_common_omop_sql_errors'):
+                    refined_sql = self.fix_common_omop_sql_errors(refined_sql)
+
+                logger.info(f"Original SQL: {sql_query}")
+                logger.info(f"Refined SQL: {refined_sql}")
+
+                # Default confidence value
+                confidence = 0.8
+
+                return refined_sql, confidence
+
+        except Exception as e:
+            logger.error(f"Error refining SQL query with LLM: {e}")
+            # Return the original query with low confidence in case of errors
+            return sql_query, 0.1
 
     async def generate_explanation(self, sql_query: str,
                              model_name: Optional[str] = None) -> str:

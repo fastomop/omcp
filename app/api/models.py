@@ -1,3 +1,4 @@
+import os, json
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any, Union
 
@@ -58,14 +59,20 @@ class DatabaseConnectionResponse(BaseModel):
     message: str
     connection_id: str
 
+def get_default_schema():
+    """Load the OMOP CDM schema as the default context"""
+    schema_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                              "schemas", "omop_cdm_schema.json")
+    try:
+        with open(schema_path, "r") as f:
+            return json.dumps(json.load(f))
+    except Exception as e:
+        # Fallback for error cases
+        return None
+
 class Query(BaseModel):
     question: str
-    context: Optional[str] = None
-
-class SQLResult(BaseModel):
-    sql: str
-    result: Any
-    execution_time: float
+    context: Optional[str] = Field(default_factory=get_default_schema)
 
 class NaturalLanguageResponse(BaseModel):
     answer: str

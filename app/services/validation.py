@@ -5,7 +5,8 @@ import json
 from app.core.config import settings
 from app.core.logging_setup import logger
 from app.api.models import ValidationResult
-from app.services.agent_service import agent_service  # Use the existing agent service
+from app.services.agent_service import agent_service
+from app.services.ollama_service import ollama_service
 
 
 class ValidationService:
@@ -13,11 +14,12 @@ class ValidationService:
 
     def __init__(self):
         self.validation_rules = self._load_validation_rules()
-        self.agent_type = "medical_validator"  # The agent type from your config
+        self.agent_type = "medical_validator"
+        self.max_refinement_attempts = 3  # Maximum number of refinement iterations
 
+    # [existing methods unchanged]
     def _load_validation_rules(self) -> Dict[str, Any]:
         """Load validation rules from file"""
-
         try:
             rules_path = settings.get_validation_rules_path()
             with open(rules_path, "r") as f:
@@ -85,7 +87,6 @@ class ValidationService:
 
     def _local_validation(self, sql_query: str) -> ValidationResult:
         """Perform local rule-based validation"""
-        # This method can remain the same as in your current implementation
         # Initialize validation result
         validation = ValidationResult(is_valid=True, issues=[])
 
@@ -169,68 +170,82 @@ class ValidationService:
         return validation
 
     async def refine_with_llm(self, sql_query: str, issues: list) -> Tuple[bool, str, list]:
-        """Use the LLM to refine a SQL query based on validation issues"""
-        from app.services.ollama_service import ollama_service
-
+        """Use the LLM to refine a SQL query with multiple iterations if needed"""
         try:
-            # Create a prompt for the LLM
-            issues_text = "\n".join([f"- {issue}" for issue in issues])
-
-            # Get the OMOP schema for context
-            schema = ""
-            try:
-                from app.services.sql_service import sql_service
-                schema = sql_service.get_omop_schema()
-            except Exception as e:
-                logger.warning(f"Could not get OMOP schema for refinement: {e}")
-
-            prompt = f"""
-            You are a SQL expert specializing in OMOP CDM. 
-
-            Here is the OMOP CDM schema summary:
-            {schema}
-
-            The following SQL query has validation issues:
-
-            ```sql
-            {sql_query}
-            ```
-
-            Validation issues:
-            {issues_text}
-
-            Please correct the SQL query to fix these issues. The query should be valid SQL that follows OMOP CDM best practices.
-
-            Return ONLY the corrected SQL query without any explanations or markdown.
-            """
-
-            # Use the Ollama service to get a refined SQL
             logger.info(f"Attempting to refine SQL query with LLM")
-            refined_sql, _ = await ollama_service.generate_sql(prompt, schema)
 
-            # Clean up the refined SQL (remove any explanatory text)
-            refined_sql = self._extract_sql_from_text(refined_sql)
+            current_sql = sql_query
+            current_issues = issues
+            best_sql = sql_query
+            best_confidence = 0.0
 
-            logger.info(f"Original SQL: {sql_query}")
-            logger.info(f"Refined SQL: {refined_sql}")
+            # Track all attempted queries to avoid repeating failed attempts
+            attempted_queries = set()
+            attempted_queries.add(sql_query)
 
-            # Validate the refined SQL
-            validation = self._local_validation(refined_sql)
-            if not validation.is_valid:
-                logger.warning(f"Refined SQL still has local validation issues: {validation.issues}")
-                return False, refined_sql, validation.issues
+            # Iterative refinement loop
+            for attempt in range(1, self.max_refinement_attempts + 1):
+                logger.info(f"Refinement attempt {attempt} of {self.max_refinement_attempts}")
 
-            # If local validation passes, check with the agent
-            agent_valid, agent_issues = await self._agent_validation(refined_sql)
-            if not agent_valid:
-                logger.warning(f"Refined SQL still has agent validation issues: {agent_issues}")
-                return False, refined_sql, agent_issues
+                # Use the ollama service's specialized refinement method
+                refined_sql, confidence = await ollama_service.refine_sql_with_omop_knowledge(
+                    sql_query=current_sql,
+                    validation_issues=current_issues
+                )
 
-            logger.info(f"SQL refinement successful")
-            return True, refined_sql, []
+                # Skip if we've already tried this exact SQL
+                if refined_sql in attempted_queries:
+                    logger.warning(f"Skipping duplicate refinement result on attempt {attempt}")
+                    continue
+
+                attempted_queries.add(refined_sql)
+
+                # Track best SQL based on confidence
+                if confidence > best_confidence:
+                    best_sql = refined_sql
+                    best_confidence = confidence
+
+                # If confidence is too low, try another iteration
+                if confidence < 0.3 and attempt < self.max_refinement_attempts:
+                    logger.warning(f"Low confidence in refined SQL: {confidence}, trying another iteration")
+                    current_sql = refined_sql
+                    continue
+
+                # Validate the refined SQL
+                local_validation = self._local_validation(refined_sql)
+                if not local_validation.is_valid:
+                    logger.warning(f"Refined SQL still has local validation issues: {local_validation.issues}")
+                    if attempt < self.max_refinement_attempts:
+                        # Use the new SQL and its issues for next iteration
+                        current_sql = refined_sql
+                        current_issues = local_validation.issues
+                        continue
+                    else:
+                        return False, best_sql, local_validation.issues
+
+                # If local validation passes, check with the agent
+                agent_valid, agent_issues = await self._agent_validation(refined_sql)
+                if not agent_valid:
+                    logger.warning(f"Refined SQL still has agent validation issues: {agent_issues}")
+                    if attempt < self.max_refinement_attempts:
+                        # Use the new SQL and its agent issues for next iteration
+                        current_sql = refined_sql
+                        current_issues = agent_issues
+                        continue
+                    else:
+                        return False, best_sql, agent_issues
+
+                # If we got here, refinement was successful
+                logger.info(f"SQL refinement successful on attempt {attempt}")
+                return True, refined_sql, []
+
+            # If we exhausted all attempts without success, return the best result
+            logger.warning(f"Exhausted {self.max_refinement_attempts} refinement attempts without success")
+            return False, best_sql, current_issues
+
         except Exception as e:
             logger.error(f"Error refining SQL query with LLM: {e}")
-            return False, sql_query, [f"LLM refinement error: {str(e)}"] + issues
+            return False, sql_query, [f"LLM refinement error: {str(e)}"]
 
     def _extract_sql_from_text(self, text: str) -> str:
         """Extract SQL query from text that might contain explanations or markdown"""
@@ -266,7 +281,8 @@ class ValidationService:
                 "refinement_attempted": False,
                 "refinement_successful": False,
                 "refined_sql": None,
-                "refined_issues": None
+                "refined_issues": None,
+                "refinement_iterations": 0
             }
 
             # If validation passed, no refinement needed
@@ -298,7 +314,15 @@ class ValidationService:
             logger.error(f"Error in validate_and_refine_query: {str(e)}")
             import traceback
             logger.error(traceback.format_exc())
-            raise
+            return {
+                "is_valid": False,
+                "original_sql": sql_query,
+                "issues": [f"Validation error: {str(e)}"],
+                "refinement_attempted": False,
+                "refinement_successful": False,
+                "refined_sql": None,
+                "refined_issues": None
+            }
 
 
 # Create a global service instance
