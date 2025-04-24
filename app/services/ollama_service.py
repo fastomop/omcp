@@ -75,6 +75,12 @@ class OllamaService:
                     if sql_query.startswith("sql"):
                         sql_query = sql_query[3:].strip()
 
+                # Extract SQL from response
+                sql_query = result["response"].strip()
+
+                # Clean up the SQL (in case it's wrapped in markdown code blocks or contains explanations)
+                sql_query = self._extract_sql_from_text(sql_query)
+
                 # Default confidence value
                 confidence = 0.9
 
@@ -84,6 +90,49 @@ class OllamaService:
         except Exception as e:
             logger.error(f"Error calling Ollama API: {e}")
             raise Exception(f"Failed to generate SQL: {str(e)}")
+
+    def _extract_sql_from_text(self, text: str) -> str:
+        """Extract SQL query from text that might contain explanations or markdown"""
+        import re
+
+        # Try to extract SQL from markdown code blocks with sql tag
+        sql_block_pattern = r"```sql\s+(.*?)\s+```"
+        matches = re.findall(sql_block_pattern, text, re.DOTALL)
+        if matches:
+            return matches[0].strip()
+
+        # Try to extract from any markdown code block
+        code_block_pattern = r"```\s+(.*?)\s+```"
+        matches = re.findall(code_block_pattern, text, re.DOTALL)
+        if matches:
+            return matches[0].strip()
+
+        # If no code blocks found but text contains SELECT, try to find the SQL statement
+        if "SELECT" in text.upper():
+            lines = text.split("\n")
+            sql_lines = []
+            in_sql = False
+
+            for line in lines:
+                if "SELECT" in line.upper() and not in_sql:
+                    in_sql = True
+                    sql_lines.append(line)
+                elif in_sql:
+                    sql_lines.append(line)
+                    if ";" in line:  # End of SQL statement
+                        break
+
+            if sql_lines:
+                return "\n".join(sql_lines)
+
+        # If all extraction methods fail, assume the entire text is SQL
+        # But check if it looks like SQL (contains SELECT)
+        if "SELECT" in text.upper():
+            return text
+
+        # Final fallback - return a simple safe query
+        logger.warning(f"Could not extract SQL from text: {text}")
+        return "SELECT 1 AS dummy"
 
     async def generate_explanation(self, sql_query: str,
                              model_name: Optional[str] = None) -> str:

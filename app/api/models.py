@@ -74,3 +74,30 @@ class NaturalLanguageResponse(BaseModel):
 
 class ErrorResponse(BaseModel):
     detail: str
+
+class SQLValidationRequest(BaseModel):
+    sql: str = Field(..., description="SQL query to validate")
+
+class SQLValidationResponse(BaseModel):
+    is_valid: bool
+    issues: Optional[List[str]] = None
+
+class ValidationResult(BaseModel):
+    is_valid: bool
+    issues: Optional[List[str]] = None
+
+class RefinementInfo(BaseModel):
+    original_sql: str
+    was_refined: bool
+
+class NaturalLanguageResponse(BaseModel):
+    answer: str
+    sql: str
+    confidence: float
+    refinement_info: Optional[RefinementInfo] = None
+
+class SQLResult(BaseModel):
+    sql: str
+    result: Any
+    execution_time: float
+    refinement_info: Optional[RefinementInfo] = None

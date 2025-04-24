@@ -34,7 +34,7 @@ class SQLService:
         return self._db_engines[conn_id]
 
     async def execute_query(self, query: str, connection_id: Optional[str] = None,
-                      connection_string: Optional[str] = None) -> Tuple[List[Dict[str, Any]], float]:
+                            connection_string: Optional[str] = None) -> Tuple[List[Dict[str, Any]], float]:
         """Execute a SQL query and return results and execution time"""
         import time
         start_time = time.time()
@@ -44,12 +44,18 @@ class SQLService:
 
             with engine.connect() as connection:
                 result = connection.execute(text(query))
+
+                # Get column names properly
                 column_names = result.keys()
 
                 # Convert rows to dictionaries
                 rows = []
                 for row in result:
-                    rows.append({column_names[i]: row[i] for i in range(len(column_names))})
+                    # Create a dictionary from the row values and column names
+                    row_dict = {}
+                    for i, column_name in enumerate(column_names):
+                        row_dict[str(column_name)] = row[i]
+                    rows.append(row_dict)
 
                 execution_time = time.time() - start_time
                 return rows, execution_time

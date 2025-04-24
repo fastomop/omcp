@@ -10,8 +10,7 @@ from app.api.models import AgentIntegration
 class AgentService:
     """Service for integrating with external AI agents"""
 
-    async def get_agent_insights(self, prompt: str, sql: str,
-                                 agent_integration: AgentIntegration) -> Dict[str, Any]:
+    async def get_agent_insights(self, prompt: str, sql: str, agent_integration: AgentIntegration) -> Dict[str, Any]:
         """Get insights from an external agent"""
         try:
             # Get agent URL either from request or from config
@@ -36,14 +35,15 @@ class AgentService:
 
             # Call the agent
             logger.info(f"Calling external agent: {agent_integration.agent_type}")
-            response = requests.post(agent_url, json=context, timeout=timeout)
-            response.raise_for_status()
 
-            return response.json()
+            # HTTP requests in async functions should use an async client
+            import aiohttp
+            async with aiohttp.ClientSession() as session:
+                async with session.post(agent_url, json=context, timeout=timeout) as response:
+                    response.raise_for_status()
+                    result = await response.json()
+                    return result
 
-        except requests.RequestException as e:
-            logger.error(f"Error calling agent: {e}")
-            return {"error": f"Agent integration error: {str(e)}"}
         except Exception as e:
             logger.error(f"Agent integration error: {e}")
             return {"error": f"Unexpected error: {str(e)}"}
@@ -51,6 +51,21 @@ class AgentService:
     def get_available_agents(self) -> Dict[str, Dict[str, Any]]:
         """Get list of available agent types"""
         return settings.config.get("agents", {})
+
+    async def get_validator_insights(self, sql_query: str, agent_type: str = "medical_validator") -> Dict[str, Any]:
+        """Get validation insights from a validator agent"""
+        try:
+            # Create a simplified agent integration
+            agent_integration = AgentIntegration(
+                agent_type=agent_type,
+                context={"query": sql_query}
+            )
+
+            # Use the existing method
+            return await self.get_agent_insights("", sql_query, agent_integration)
+        except Exception as e:
+            logger.error(f"Validator error: {e}")
+            return {"error": f"Validator error: {str(e)}"}
 
 
 # Create a global service instance
