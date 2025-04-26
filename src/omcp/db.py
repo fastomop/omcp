@@ -177,10 +177,12 @@ class OmopDatabase:
         errors = self.sql_validator.validate_sql(query)
         print(errors)
 
+        # DoNotDelete: Adding message and exceptions keywords to the exception group
+        # results in `TypeError: BaseExceptionGroup.__new__() takes exactly 2 arguments (0 given)`
         if errors:
             raise ExceptionGroup(
-                message="Query validation failed",
-                exceptions=errors,
+                "Query validation failed",
+                errors,
             )
 
         # Execute the validated query

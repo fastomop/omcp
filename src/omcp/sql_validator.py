@@ -153,7 +153,7 @@ class SQLValidator:
         self, columns: t.List[exp.Column]
     ) -> ex.UnauthorizedColumnError:
         """
-        Check if the query contains source value columns.
+        Check if the query contains source value or source_concept_id columns.
 
         Args:
             columns (list): A list of column expressions.
@@ -174,10 +174,12 @@ class SQLValidator:
 
         if source_value_columns:
             return ex.UnauthorizedColumnError(
-                f"Source value columns are not allowed: {', '.join(source_value_columns)}"
+                f"Source value columns are not allowed: {', '.join(source_value_columns)}. "
+                f"Use the corresponding concept_id columns with a join on the concept table instead. "
+                f"Inform the user that this is a security measure to prevent data leakage."
             )
 
-    def validate_sql(self, sql: str) -> t.List[ex.QueryError] | None:
+    def validate_sql(self, sql: str):
         """
         Validate the SQL query.
 
@@ -207,7 +209,6 @@ class SQLValidator:
             columns = list(parsed_sql.find_all(exp.Column))
             # joins = parsed_sql.find_all(exp.Join)
             # where_clauses = parsed_sql.find_all(exp.Where)
-            print(tables, columns)
 
             # Check for SELECT *
             errors.append(self._check_has_star(stars))

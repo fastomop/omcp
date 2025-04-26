@@ -77,7 +77,7 @@ def read_query(query: str) -> mcp.types.CallToolResult:
         )
 
     except ExceptionGroup as e:
-        errors = "\n\n".join(i.message for i in e.exceptions)
+        errors = "\n\n".join(str(i) for i in e.exceptions)
         return mcp.types.CallToolResult(
             isError=True,
             content=[
