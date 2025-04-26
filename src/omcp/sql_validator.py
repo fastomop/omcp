@@ -74,6 +74,23 @@ class SQLValidator:
             list(map(str.lower, exclude_columns)) if exclude_columns is not None else []
         )
 
+    def _check_is_select_query(
+        self, parsed_sql: exp.Expression
+    ) -> ex.NotSelectQueryError:
+        """
+        Check if the parsed SQL query is a SELECT statement.
+
+        Args:
+            parsed_sql (exp.Expression): The parsed SQL query.
+
+        Returns:
+            NotSelectQueryError: If the query is not a SELECT statement.
+        """
+        if not isinstance(parsed_sql, exp.Select):
+            return ex.NotSelectQueryError(
+                "Only SELECT statements are allowed for security reasons."
+            )
+
     def _check_has_star(self, stars: t.List[exp.Star]) -> ex.StarNotAllowedError:
         """
         Check if the query contains star columns.
@@ -138,7 +155,7 @@ class SQLValidator:
             UnauthorizedColumnError: An error indicating the presence of unauthorized columns
             in the query, if any are found. Otherwise, returns None.
         """
-
+        print(self.exclude_columns)
         unauthorized_columns = [
             column.name.lower()
             for column in columns
@@ -190,25 +207,29 @@ class SQLValidator:
             list: A list of errors found during validation. If no errors, returns an empty list.
 
         """
+
+        errors = []
+
         try:
             # Parse the SQL query
             parsed_sql = sg.parse_one(sql)
 
             # Validate the query to ensure it's a SELECT statement
-            if not isinstance(parsed_sql, exp.Select):
-                return [
-                    exp.NotSelectQueryError(
-                        "Only SELECT statements are allowed for security reasons."
-                    )
-                ]
 
-            errors = []
+            is_not_select_query = self._check_is_select_query(parsed_sql)
+            if is_not_select_query:
+                raise is_not_select_query
 
             stars = list(parsed_sql.find_all(exp.Star))
             tables = list(parsed_sql.find_all(exp.Table))
             columns = list(parsed_sql.find_all(exp.Column))
             # joins = parsed_sql.find_all(exp.Join)
             # where_clauses = parsed_sql.find_all(exp.Where)
+
+            if not tables:
+                errors.append(ex.TableNotFoundError("No tables found in the query."))
+            if not columns:
+                errors.append(ex.ColumnNotFoundError("No columns found in the query."))
 
             # Check for SELECT *
             errors.append(self._check_has_star(stars))
@@ -225,7 +246,6 @@ class SQLValidator:
             # Check for source value columns
             errors.append(self._check_source_value_columns(columns))
 
-            print(errors)
         except sg.ParseError as e:
             errors.append(e)
         except Exception as e:

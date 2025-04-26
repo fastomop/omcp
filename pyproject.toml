@@ -58,5 +58,6 @@ dev = [
     "mkdocs>=1.6.1",
     "mkdocs-material>=9.6.12",
     "pre-commit>=4.2.0",
+    "pytest>=8.3.5",
     "ruff>=0.11.6",
 ]
