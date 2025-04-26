@@ -51,7 +51,7 @@ markdown_extensions:
       custom_fences:
         - name: mermaid
           class: mermaid
-          format: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
 plugins:
   - git-authors
   - search
