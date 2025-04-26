@@ -37,6 +37,12 @@ class SqlSyntaxError(QueryError):
     pass
 
 
+class StarNotAllowedError(QueryError):
+    """Exception raised when a star (*) is used in the query"""
+
+    pass
+
+
 class TableNotFoundError(QueryError):
     """Exception raised when a table referenced in the query doesn't exist"""
 
@@ -45,5 +51,11 @@ class TableNotFoundError(QueryError):
 
 class UnauthorizedTableError(QueryError):
     """Exception raised when query attempts to access unauthorized tables"""
+
+    pass
+
+
+class UnauthorizedColumnError(QueryError):
+    """Exception raised when query attempts to access unauthorized columns"""
 
     pass

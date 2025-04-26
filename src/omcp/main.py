@@ -1,17 +1,8 @@
 import os
 from mcp.server.fastmcp import FastMCP
+import mcp
 from dotenv import load_dotenv, find_dotenv
 from omcp.db import OmopDatabase
-from omcp.exceptions import (
-    AmbiguousReferenceError,
-    ColumnNotFoundError,
-    EmptyQueryError,
-    NotSelectQueryError,
-    QueryError,
-    SqlSyntaxError,
-    TableNotFoundError,
-    UnauthorizedTableError,
-)
 
 load_dotenv(find_dotenv())
 
@@ -22,33 +13,51 @@ connection_string = os.environ["DB_CONNECTION_STRING"]
 host = os.environ.get("MCP_HOST", "localhost")
 port = int(os.environ.get("MCP_PORT", "8000"))
 
-mcp = FastMCP(name="OMOP MCP Server")
-db = OmopDatabase(connection_string=connection_string)
+mcp_app = FastMCP(name="OMOP MCP Server")
+db = OmopDatabase(
+    connection_string=connection_string,
+    cdm_schema=os.environ.get("CDM_SCHEMA", "base"),
+    vocab_schema=os.environ.get("VOCAB_SCHEMA", "base"),
+)
 
 
-@mcp.tool(
+@mcp_app.tool(
     name="Get_Information_Schema",
     description="Get the information schema of the OMOP database.",
 )
-def get_information_schema() -> list[str]:
+def get_information_schema() -> mcp.types.CallToolResult:
     """Get the information schema of the OMOP database.
 
-    This function is a tool in the MCP server that retrieves the information schema
-    from the OMOP database. Information is restricted to only tables and columns allowed by the
-    configuration. The function returns a list of schemas, tables, columns and data types
-    in the OMOP database formatted as a CSV string.
+    This function retrieves information from the information schema of the OMOP database.
+    Information is restricted to only tables and columns allowed by the users configuration.
     Args:
         None
     Returns:
-        List of schemas, tables, columns and data types in the OMOP database formatted as a CSV string.
+        List of schemas, tables, columns and data types formatted as a CSV string.
     """
-    return db.get_information_schema()
+    try:
+        result = db.get_information_schema()
+        return mcp.types.CallToolResult(
+            content=[
+                mcp.types.TextContent(type="text", text=result),
+            ]
+        )
+    except Exception as e:
+        return mcp.types.CallToolResult(
+            isError=True,
+            content=[
+                mcp.types.TextContent(
+                    type="text",
+                    text=f"Failed to retrieve information schema: {str(e)}",
+                )
+            ],
+        )
 
 
-@mcp.tool(
+@mcp_app.tool(
     name="Select_Query", description="Execute a select query against the OMOP database."
 )
-def read_query(query: str) -> str:
+def read_query(query: str) -> mcp.types.CallToolResult:
     """Run a SQL query against the OMOP database.
 
     This function is a tool in the MCP server that allows users to execute SQL queries
@@ -60,27 +69,34 @@ def read_query(query: str) -> str:
         Result of the query as a string or a detailed error message if the query fails.
     """
     try:
-        return db.read_query(query)
-    except EmptyQueryError as e:
-        return f"Error: {str(e)}. Please provide a non-empty SQL query."
-    except SqlSyntaxError as e:
-        return f"Error: {str(e)}. Please check your SQL syntax and try again."
-    except NotSelectQueryError as e:
-        return (
-            f"Error: {str(e)}. For security reasons, only SELECT queries are allowed."
+        result = db.read_query(query)
+        return mcp.types.CallToolResult(
+            content=[
+                mcp.types.TextContent(type="text", text=result),
+            ]
         )
-    except UnauthorizedTableError as e:
-        return f"Error: {str(e)}. Please use only the authorized tables."
-    except ColumnNotFoundError as e:
-        return f"Error: {str(e)}. Please check column names and table references."
-    except TableNotFoundError as e:
-        return f"Error: {str(e)}. Please check that you're using valid table names."
-    except AmbiguousReferenceError as e:
-        return f"Error: {str(e)}. Please qualify column names with table names to resolve ambiguity."
-    except QueryError as e:
-        return f"Error executing query: {str(e)}"
+
+    except ExceptionGroup as e:
+        errors = "\n\n".join(i.message for i in e.exceptions)
+        return mcp.types.CallToolResult(
+            isError=True,
+            content=[
+                mcp.types.TextContent(
+                    type="text",
+                    text=f"Query validation failed with one or more errors:\n {errors}",
+                )
+            ],
+        )
     except Exception as e:
-        return f"Unexpected error: {str(e)}. Please contact the administrator if this issue persists."
+        return mcp.types.CallToolResult(
+            isError=True,
+            content=[
+                mcp.types.TextContent(
+                    type="text",
+                    text=f"Failed to execute query: {str(e)}",
+                )
+            ],
+        )
 
 
 def main():
@@ -88,10 +104,8 @@ def main():
     print(f"Starting OMOP MCP Server with SSE transport on {host}:{port}")
 
     # Run the server with SSE transport
-    mcp.run(
-        transport="sse",
-        # host=host,
-        # port=port
+    mcp_app.run(
+        transport="stdio",
     )
 
 
