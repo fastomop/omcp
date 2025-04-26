@@ -4,15 +4,7 @@ version = "0.1.0"
 description = "Model Context Protocol Server for the Observational Medical Outcomes Partnership (OMOP) Common Data Model"
 readme = "README.md"
 license = "MIT"
-keywords = [
-    "claude",
-    "ibis",
-    "llm",
-    "mcp server",
-    "ohdsi",
-    "omop",
-    "python",
-]
+keywords = ["claude", "ibis", "llm", "mcp server", "ohdsi", "omop", "python"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Developers",
@@ -22,28 +14,19 @@ classifiers = [
     "Natural Language :: English",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence"
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-authors = [
-    { name = "vvcb" }
-]
+authors = [{ name = "vvcb" }, { name = "shen1802" }, { name = "nikomoegre" }]
 requires-python = ">=3.13"
-dependencies = [
-    "ibis-framework>=10.5.0",
-    "mcp[cli]>=1.6.0",
-]
-urls = {Documentation = "https://fastomop.github.io/omcp/", Repository = "https://github.com/fastomop/omcp"}
+dependencies = ["ibis-framework>=10.5.0", "mcp[cli]>=1.6.0"]
+urls = { Documentation = "https://fastomop.github.io/omcp/", Repository = "https://github.com/fastomop/omcp" }
 
 [project.scripts]
 omcp = "omcp:main.main"
 
 [project.optional-dependencies]
-duckdb = [
-    "ibis-framework[duckdb]>=10.5.0",
-]
-postgres = [
-    "ibis-framework[postgres]>=10.5.0",
-]
+duckdb = ["ibis-framework[duckdb]>=10.5.0"]
+postgres = ["ibis-framework[postgres]>=10.5.0"]
 
 [build-system]
 requires = ["hatchling"]
@@ -56,6 +39,7 @@ dev = [
     "jupyterlab>=4.4.0",
     "jupyterlab-code-formatter>=3.0.2",
     "mkdocs>=1.6.1",
+    "mkdocs-git-authors-plugin>=0.9.5",
     "mkdocs-material>=9.6.12",
     "pre-commit>=4.2.0",
     "pytest>=8.3.5",

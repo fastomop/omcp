@@ -975,6 +975,18 @@ wheels = [
 ]
 
 [[package]]
+name = "mkdocs-git-authors-plugin"
+version = "0.9.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "mkdocs" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9a/2a/708b4d59c27cb4fe94810521a0cb0ab70a209a52ee89c8e545b121bde61d/mkdocs_git_authors_plugin-0.9.5.tar.gz", hash = "sha256:e19f0252ead3d626fd73e15bb56d6675704c3b62aa569ebc363f791291b8f60e", size = 22538 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e1/d3/cae67388e9ddbce5320bbf95d648742dbad7420bf494d387a37b719c4157/mkdocs_git_authors_plugin-0.9.5-py3-none-any.whl", hash = "sha256:acdacc8452db90a94d9c395a230b16965a9f2f51e0a6eef182ac7d3e02e394fb", size = 20906 },
+]
+
+[[package]]
 name = "mkdocs-material"
 version = "9.6.12"
 source = { registry = "https://pypi.org/simple" }
@@ -1134,6 +1146,7 @@ source = { editable = "." }
 dependencies = [
     { name = "ibis-framework" },
     { name = "mcp", extra = ["cli"] },
+    { name = "mkdocs-git-authors-plugin" },
 ]
 
 [package.optional-dependencies]
@@ -1151,6 +1164,7 @@ dev = [
     { name = "jupyterlab" },
     { name = "jupyterlab-code-formatter" },
     { name = "mkdocs" },
+    { name = "mkdocs-git-authors-plugin" },
     { name = "mkdocs-material" },
     { name = "pre-commit" },
     { name = "pytest" },
@@ -1163,6 +1177,7 @@ requires-dist = [
     { name = "ibis-framework", extras = ["duckdb"], marker = "extra == 'duckdb'", specifier = ">=10.5.0" },
     { name = "ibis-framework", extras = ["postgres"], marker = "extra == 'postgres'", specifier = ">=10.5.0" },
     { name = "mcp", extras = ["cli"], specifier = ">=1.6.0" },
+    { name = "mkdocs-git-authors-plugin", specifier = ">=0.9.5" },
 ]
 provides-extras = ["duckdb", "postgres"]
 
@@ -1173,6 +1188,7 @@ dev = [
     { name = "jupyterlab", specifier = ">=4.4.0" },
     { name = "jupyterlab-code-formatter", specifier = ">=3.0.2" },
     { name = "mkdocs", specifier = ">=1.6.1" },
+    { name = "mkdocs-git-authors-plugin", specifier = ">=0.9.5" },
     { name = "mkdocs-material", specifier = ">=9.6.12" },
     { name = "pre-commit", specifier = ">=4.2.0" },
     { name = "pytest", specifier = ">=8.3.5" },

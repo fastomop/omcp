@@ -1,16 +1,24 @@
 site_name: OMOP MCP Server
-site_description: Model Context Protocol Server for the Observational Medical Outcomes Partnership (OMOP) Common Data Model
+site_description: |
+  Model Context Protocol Server for the Observational Medical Outcomes Partnership (OMOP)
+  Common Data Model
 site_author: vvcb
+repo_url: https://github.com/fastomop/omcp
+repo_name: fastomop/omcp
 
 theme:
   name: material
+  logo: assets/omcp-logo.png
   palette:
     scheme: default
     toggle:
       icon: material/toggle-switch
       name: Switch to dark mode
+  icon:
+    repo: fontawesome/brands/github
   features:
     - content.code.copy
+    # - header.autohide
     - navigation.expand
     - navigation.instant
     - navigation.search.highlight
@@ -20,6 +28,7 @@ theme:
     - navigation.search.suggest.indexes
     - navigation.sections
     - navigation.tabs
+    # - navigation.tabs.sticky
     - navigation.top
     - navigation.tracking
     - search.highlight
@@ -27,11 +36,22 @@ theme:
     - search.suggest
     - search.suggest.external
     - search.suggest.indexes
-  nav:
-    - Home: index.md
-    - Installation: installation.md
-    - Contributing: contributing.md
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - SQL:
+      - Overview: sql/index.md
+      - Execution: sql/execution.md
+      - Validation: sql/validation.md
+  - Contributing: contributing.md
 markdown_extensions:
   - admonition
   - pymdownx.details
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: mermaid
+plugins:
+  - git-authors
+  - search
