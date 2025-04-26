@@ -91,21 +91,6 @@ class SQLValidator:
                 "Only SELECT statements are allowed for security reasons."
             )
 
-    def _check_has_star(self, stars: t.List[exp.Star]) -> ex.StarNotAllowedError:
-        """
-        Check if the query contains star columns.
-
-        Args:
-            stars (List[exp.Star]): A list of star expressions.
-
-        Returns:
-            StarNotAllowedError: If star columns are found.
-        """
-        if stars:
-            return ex.StarNotAllowedError(
-                "Star columns are not allowed. Specify columns explicitly."
-            )
-
     def _check_is_omop_table(self, tables: t.List[exp.Table]) -> ex.TableNotFoundError:
         not_omop_tables = [
             table.name.lower()
@@ -220,7 +205,6 @@ class SQLValidator:
             if is_not_select_query:
                 raise is_not_select_query
 
-            stars = list(parsed_sql.find_all(exp.Star))
             tables = list(parsed_sql.find_all(exp.Table))
             columns = list(parsed_sql.find_all(exp.Column))
             # joins = parsed_sql.find_all(exp.Join)
@@ -230,9 +214,6 @@ class SQLValidator:
                 errors.append(ex.TableNotFoundError("No tables found in the query."))
             if not columns:
                 errors.append(ex.ColumnNotFoundError("No columns found in the query."))
-
-            # Check for SELECT *
-            errors.append(self._check_has_star(stars))
 
             # Check is OMOP table
             errors.append(self._check_is_omop_table(tables))

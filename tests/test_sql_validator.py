@@ -54,14 +54,14 @@ class TestSQLValidator:
         assert len(errors) == 1, f"Expected 1 error, got: {errors}"
         assert isinstance(errors[0], ex.NotSelectQueryError)
 
-    def test_star_not_allowed(self, validator):
-        """Test that SELECT * is not allowed"""
-        sql = "SELECT * FROM person"
-        errors = validator.validate_sql(sql)
-        assert len(errors) == 2, f"Expected 2 errors, got: {errors}"
-        error_types = [type(e) for e in errors]
-        assert ex.StarNotAllowedError in error_types
-        assert ex.ColumnNotFoundError in error_types
+    # def test_star_not_allowed(self, validator):
+    #     """Test that SELECT * is not allowed"""
+    #     sql = "SELECT * FROM person"
+    #     errors = validator.validate_sql(sql)
+    #     assert len(errors) == 2, f"Expected 2 errors, got: {errors}"
+    #     error_types = [type(e) for e in errors]
+    #     assert ex.StarNotAllowedError in error_types
+    #     assert ex.ColumnNotFoundError in error_types
 
     def test_non_omop_table(self, validator):
         """Test that non-OMOP tables are rejected"""

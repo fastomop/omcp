@@ -172,28 +172,27 @@ class OmopDatabase:
             CSV string representing query results
         """
 
-        # try:
-        # Validate the SQL query
-        errors = self.sql_validator.validate_sql(query)
-        print(errors)
+        try:
+            # Validate the SQL query
+            errors = self.sql_validator.validate_sql(query)
 
-        # DoNotDelete: Adding message and exceptions keywords to the exception group
-        # results in `TypeError: BaseExceptionGroup.__new__() takes exactly 2 arguments (0 given)`
-        if errors:
-            raise ExceptionGroup(
-                "Query validation failed",
-                errors,
-            )
+            # DoNotDelete: Adding message and exceptions keywords to the exception group
+            # results in `TypeError: BaseExceptionGroup.__new__() takes exactly 2 arguments (0 given)`
+            if errors:
+                raise ExceptionGroup(
+                    "Query validation failed",
+                    errors,
+                )
 
-        # Execute the validated query
-        result = self.conn.sql(query).limit(
-            self.row_limit
-        )  # Limit to 1000 rows for performance
-        df = result.execute()
-        # Convert dataframe to csv
-        return df.to_csv(index=False)
+            # Execute the validated query
+            result = self.conn.sql(query).limit(
+                self.row_limit
+            )  # Limit to 1000 rows for performance
+            df = result.execute()
+            # Convert dataframe to csv
+            return df.to_csv(index=False)
 
-        # except ExceptionGroup:
-        #     raise
-        # except Exception as e:
-        #     raise ex.QueryError(f"Failed to execute query: {str(e)}")
+        except ExceptionGroup:
+            raise
+        except Exception as e:
+            raise ex.QueryError(f"Failed to execute query: {str(e)}")
