@@ -101,9 +101,7 @@ def read_query(query: str) -> mcp.types.CallToolResult:
 
 def main():
     """Main function to run the MCP server."""
-    print(f"Starting OMOP MCP Server with SSE transport on {host}:{port}")
 
-    # Run the server with SSE transport
     mcp_app.run(
         transport="stdio",
     )

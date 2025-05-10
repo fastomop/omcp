@@ -1,9 +1,8 @@
 import ibis
 from ibis.backends import BaseBackend
-from ibis.backends.duckdb import Backend as DuckDBBackend
-from typing import Dict, List, Optional
-import omcp.exceptions as ex
 
+from typing import Dict, List, Optional, Any
+import omcp.exceptions as ex
 
 from functools import lru_cache
 
@@ -34,10 +33,10 @@ class OmopDatabase:
             allowed_tables: List of allowed tables for queries
         """
 
-        self.conn: BaseBackend | DuckDBBackend = None
+        self.conn: BaseBackend | Any = None
         self.supported_databases = [
             "duckdb",
-            # 'postgresql',
+            "postgres",
             # 'mssql',
             # 'mysql',
             # 'sqlite',
@@ -97,44 +96,14 @@ class OmopDatabase:
         )
         self.cdm_schema = cdm_schema
         self.vocab_schema = vocab_schema
-
+        print(connection_string)
         try:
-            # Parse connection string to determine database type and connect
-            if connection_string.startswith("duckdb://"):
-                import importlib.util
-
-                if not importlib.util.find_spec("ibis.backends.duckdb"):
-                    raise ImportError(
-                        "The 'ibis.backends.duckdb' module is not installed. Please install it to use this backend."
-                    )
-                self.conn = ibis.duckdb.connect(
-                    connection_string.replace("duckdb://", ""), read_only=read_only
-                )
-            # Uncomment and modify the following lines to support other databases after testing
-            # elif connection_string.startswith('postgresql://'):
-
-            #     self.conn: ibis.backends.postgres.Backend = ibis.postgres.connect(connection_string)
-            # elif connection_string.startswith('mssql://') or connection_string.startswith('sqlserver://'):
-            #     self.conn: ibis.backends.mssql.Backend = ibis.mssql.connect(connection_string)
-            # elif connection_string.startswith('mysql://'):
-            #     self.conn: ibis.backends.mysql.Backend = ibis.mysql.connect(connection_string)
-            # elif connection_string.startswith('sqlite://'):
-            #     self.conn: ibis.backends.sqlite.Backend = ibis.sqlite.connect(connection_string.replace('sqlite://', ''))
-            # # elif connection_string.startswith('clickhouse://'):
-            #     self.conn: ibis.backends.clickhouse.Backend = ibis.clickhouse.connect(connection_string)
-            # elif connection_string.startswith('bigquery://'):
-            #     self.conn: ibis.backends.bigquery.Backend = ibis.bigquery.connect(connection_string.replace('bigquery://', ''))
-            # elif connection_string.startswith('snowflake://'):
-            #     self.conn: ibis.backends.snowflake.Backend = ibis.snowflake.connect(connection_string)
-            # elif connection_string.startswith('impala://'):
-            #     self.conn: ibis.backends.impala.Backend      = ibis.impala.connect(connection_string)
-            # elif connection_string.startswith('oracle://'):
-            #     self.conn: ibis.backends.oracle.Backend = ibis.oracle.connect(connection_string)
-            else:
+            # Check if the connection string starts with a supported prefix
+            if not connection_string.startswith(tuple(self.supported_databases)):
                 raise ValueError(
                     f"Unsupported database type in connection string: {connection_string}. Supported types are: {', '.join(self.supported_databases)}"
                 )
-
+            self.conn = ibis.connect(connection_string)
         except Exception as e:
             raise ConnectionError(f"Failed to connect to database: {str(e)}")
 

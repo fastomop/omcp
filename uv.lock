@@ -1154,6 +1154,7 @@ duckdb = [
 ]
 postgres = [
     { name = "ibis-framework", extra = ["postgres"] },
+    { name = "psycopg" },
 ]
 
 [package.dev-dependencies]
@@ -1176,6 +1177,7 @@ requires-dist = [
     { name = "ibis-framework", extras = ["duckdb"], marker = "extra == 'duckdb'", specifier = ">=10.5.0" },
     { name = "ibis-framework", extras = ["postgres"], marker = "extra == 'postgres'", specifier = ">=10.5.0" },
     { name = "mcp", extras = ["cli"], specifier = ">=1.6.0" },
+    { name = "psycopg", marker = "extra == 'postgres'", specifier = ">=3.2.6" },
 ]
 provides-extras = ["duckdb", "postgres"]
 
