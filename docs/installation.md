@@ -177,6 +177,111 @@ Replace `/ABSOLUTE/PATH/TO/PARENT/FOLDER THAT CONTAINS main.py` with the actual 
 
 Start Claude Desktop and the OMCP server should automatically be available for use. You can verify the connection by asking Claude to query the OMOP database.
 
+## Integrating with Localhost models 🦙
+
+### Step 1: Install Ollama 
+Download and install [Ollama](https://ollama.com/) from the official website. To check if Ollama has been installed properly, open a terminal and type:
+
+```bash
+ollama --version
+```
+
+you should see something like this in your terminal: `ollama version is 0.6.8`
+
+### Step 2: Pull a model from Ollama
+Go to the [Ollama models](https://ollama.com/search) and copy the name of the model you want to pull (e.g., cogito:14b), make sure the model you are pulling is compatible with the MCP tooling option. Next, type in the terminal:
+
+```bash
+ollama pull cogito:14b
+```
+
+The process will take a while depending on the size of the model, but when it finishes type in the terminal: 
+
+```bash
+ollama list
+```
+
+if everything went well, you should see the model you have pulled from Ollama. In my case `cogito:14b`.
+
+### Step 3: End-user interface configuration
+We are going to use [Librechat](https://www.librechat.ai/) as the end-user interface.
+
+1. In the OMCP project, navigate to the directory where the `main.py` file is located, go to the function `def main()` and change the `transport` from `stdio` to `sse`.
+   
+    ```python
+    def main():
+    """Main function to run the MCP server."""
+
+      mcp_app.run(
+          transport="sse", #before was stdio
+      )
+    ```
+
+2. In the same directory where `main.py` is located, run the following command:
+    
+    ```python
+    python main.py
+    ```
+  
+    You should see something like this in the terminal:
+    ```
+    INFO:     Started server process [96250]
+    INFO:     Waiting for application startup.
+    INFO:     Application startup complete.
+    INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+    ```
+    This means that we are exposing our MCP Tool in the port `http://0.0.0.0:8000` so other services can consume it.
+
+3. Download and install [Docker Desktop](https://www.docker.com/). Once Docker is installed, open Docker Desktop to ensure it is running.
+
+4. In a separate terminal or IDE window, clone the Librechat repository:
+
+    ```bash
+    git clone https://github.com/danny-avila/LibreChat.git
+    ```
+
+5. In the Librechat repository, navigate to the project directory and create a configuration `.env` file, you can create the file by:
+
+    ```bash
+    cp .env.example .env
+    ```
+
+6. In the same project directory, create a `.yaml` file, by:
+
+    ```bash
+    cp libreachat.example.yaml librechat.yaml
+    ```
+
+7. Add the following code at the end of the `librechat.yaml` file we created above:
+
+    ```yaml
+    # MCP servers
+     mcpServers:
+       omop_mcp:
+         # type: sse # type can optionally be omitted
+         url: http://host.docker.internal:8000/sse
+         timeout: 60000  # 1 minute timeout for this server, this is the default timeout for MCP servers.
+    ```
+
+8. In the project directory, run:
+    ```bash
+    docker compose up -d
+    ```
+    If successful, you should see something like this:
+    ```
+    [+] Running 5/5
+     ✔ Container vectordb          Started
+     ✔ Container chat-meilisearch  Started
+     ✔ Container chat-mongodb      Started 
+     ✔ Container rag_api           Started
+     ✔ Container LibreChat         Started
+    ```
+  
+9. Finally, go to the browser and type `localhost:3080`, if it is the first time using Librechat, you need to create an account. Then select the model you pulled, in my case `cogito:14b` and in the chat, just next to the `Code Interpreter` you should see the MCP Tool, click on it and select `omop_mcp`.
+
+    You should see something like this:
+    ![Librechat running OMCP locally](assets/librechat-omcp.png)
+
 ## Troubleshooting 🔧
 
 ### Common Issues
