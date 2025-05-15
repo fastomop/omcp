@@ -254,31 +254,3 @@ class SQLValidator:
         finally:
             errors = list(filter(None, errors))  # Remove None values from the list
             return errors
-
-
-if __name__ == "__main__":
-     query = """
-                WITH lisinopril_patients AS (
-                    SELECT DISTINCT person_id
-                    FROM base.drug_exposure d
-                    JOIN base.concept c ON d.drug_concept_id = c.concept_id
-                    WHERE c.concept_name LIKE '%lisinopril%'
-                )SELECT 
-                    c.concept_name as condition_name,
-                    COUNT(DISTINCT co.person_id) as patient_count,
-                    COUNT(*) as occurrence_count
-                FROM 
-                    base.condition_occurrence co
-                JOIN 
-                    base.concept c ON co.condition_concept_id = c.concept_id
-                JOIN 
-                    lisinopril_patients lp ON co.person_id = lp.person_id
-                GROUP BY 
-                    c.concept_name
-                ORDER BY 
-                    patient_count DESC, occurrence_count DESC
-                LIMIT 20
-            """
-     sql_validator = SQLValidator( allow_source_value_columns=False, exclude_tables=None, exclude_columns=None)
-     sql_validator.validate_sql(query)
-
