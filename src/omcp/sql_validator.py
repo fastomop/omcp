@@ -94,7 +94,7 @@ class SQLValidator:
 
     def _check_is_omop_table(self, parsed_sql: exp.Expression) -> ex.TableNotFoundError:
         """
-        Check if all real table references in the query are OMOP CDM tables and 
+        Check if all real table references in the query are OMOP CDM tables and
         ignores CTEs (defined in WITH clauses).
 
         Args:
@@ -105,9 +105,9 @@ class SQLValidator:
         """
         root = build_scope(parsed_sql)
         tables = [
-            source 
-            for scope in root.traverse() 
-            for alias, (node, source) in scope.selected_sources.items() 
+            source
+            for scope in root.traverse()
+            for alias, (node, source) in scope.selected_sources.items()
             if isinstance(source, exp.Table)
         ]
 
