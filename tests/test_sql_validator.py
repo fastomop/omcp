@@ -1,6 +1,7 @@
 import pytest
 from omcp.sql_validator import SQLValidator
 import omcp.exceptions as ex
+import sqlglot
 
 
 @pytest.fixture
@@ -125,3 +126,39 @@ class TestSQLValidator:
         assert len(errors) == 1
         assert isinstance(errors[0], ex.UnauthorizedColumnError)
         assert "Source value columns are not allowed" in str(errors[0])
+
+    def test_check_is_omop_table_ignores_cte(self, validator):
+        """Test that _check_is_omop_table ignores CTEs"""
+        sql = """
+        WITH patient AS (
+            SELECT person_id, gender_concept_id FROM person
+        ),
+        visits AS (
+            SELECT visit_occurrence_id, person_id FROM visit_occurrence
+        )
+        SELECT p.person_id, v.visit_occurrence_id
+        FROM patient p
+        JOIN visits v ON p.person_id = v.person_id
+        """
+        parsed_sql = sqlglot.parse_one(sql)
+        error = validator._check_is_omop_table(parsed_sql)
+        assert error is None, f"Expected no error, got: {error}"
+
+    def test_check_is_omop_table_ignores_multiple_ctes(self, validator):
+        """Test that _check_is_omop_table ignores multiple CTEs with non-OMOP tables"""
+        sql = """
+        WITH temp_users AS (
+            SELECT person_id, year_of_birth, gender_concept_id
+            FROM person
+        ),
+        temp_visits AS (
+            SELECT visit_occurrence_id, person_id, visit_start_date
+            FROM visit_occurrence
+        )
+        SELECT p.person_id, p.year_of_birth, v.visit_start_date
+        FROM temp_users p
+        JOIN temp_visits v ON p.person_id = v.person_id
+        """
+        parsed_sql = sqlglot.parse_one(sql)
+        error = validator._check_is_omop_table(parsed_sql)
+        assert error is None, f"Expected no error, got: {error}"

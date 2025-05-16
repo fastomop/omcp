@@ -179,7 +179,7 @@ Start Claude Desktop and the OMCP server should automatically be available for u
 
 ## Integrating with Localhost models 🦙
 
-### Step 1: Install Ollama 
+### Step 1: Install Ollama
 Download and install [Ollama](https://ollama.com/) from the official website. To check if Ollama has been installed properly, open a terminal and type:
 
 ```bash
@@ -195,7 +195,7 @@ Go to the [Ollama models](https://ollama.com/search) and copy the name of the mo
 ollama pull cogito:14b
 ```
 
-The process will take a while depending on the size of the model, but when it finishes type in the terminal: 
+The process will take a while depending on the size of the model, but when it finishes type in the terminal:
 
 ```bash
 ollama list
@@ -207,7 +207,7 @@ if everything went well, you should see the model you have pulled from Ollama. I
 We are going to use [Librechat](https://www.librechat.ai/) as the end-user interface.
 
 1. In the OMCP project, navigate to the directory where the `main.py` file is located, go to the function `def main()` and change the `transport` from `stdio` to `sse`.
-   
+
     ```python
     def main():
     """Main function to run the MCP server."""
@@ -218,11 +218,11 @@ We are going to use [Librechat](https://www.librechat.ai/) as the end-user inter
     ```
 
 2. In the same directory where `main.py` is located, run the following command:
-    
+
     ```python
     python main.py
     ```
-  
+
     You should see something like this in the terminal:
     ```
     INFO:     Started server process [96250]
@@ -272,11 +272,11 @@ We are going to use [Librechat](https://www.librechat.ai/) as the end-user inter
     [+] Running 5/5
      ✔ Container vectordb          Started
      ✔ Container chat-meilisearch  Started
-     ✔ Container chat-mongodb      Started 
+     ✔ Container chat-mongodb      Started
      ✔ Container rag_api           Started
      ✔ Container LibreChat         Started
     ```
-  
+
 9. Finally, go to the browser and type `localhost:3080`, if it is the first time using Librechat, you need to create an account. Then select the model you pulled, in my case `cogito:14b` and in the chat, just next to the `Code Interpreter` you should see the MCP Tool, click on it and select `omop_mcp`.
 
     You should see something like this:
