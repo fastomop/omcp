@@ -1,7 +1,6 @@
 import pytest
 from omcp.sql_validator import SQLValidator
 import omcp.exceptions as ex
-import sqlglot
 
 
 @pytest.fixture
