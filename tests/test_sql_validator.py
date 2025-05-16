@@ -140,9 +140,8 @@ class TestSQLValidator:
         FROM patient p
         JOIN visits v ON p.person_id = v.person_id
         """
-        parsed_sql = sqlglot.parse_one(sql)
-        error = validator._check_is_omop_table(parsed_sql)
-        assert error is None, f"Expected no error, got: {error}"
+        errors = validator.validate_sql(sql)
+        assert len(errors) == 0, f"Expected no errors, got: {errors}"
 
     def test_check_is_omop_table_ignores_multiple_ctes(self, validator):
         """Test that _check_is_omop_table ignores multiple CTEs with non-OMOP tables"""
@@ -159,6 +158,6 @@ class TestSQLValidator:
         FROM temp_users p
         JOIN temp_visits v ON p.person_id = v.person_id
         """
-        parsed_sql = sqlglot.parse_one(sql)
-        error = validator._check_is_omop_table(parsed_sql)
-        assert error is None, f"Expected no error, got: {error}"
+
+        errors = validator.validate_sql(sql)
+        assert len(errors) == 0, f"Expected no errors, got: {errors}"
