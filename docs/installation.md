@@ -32,7 +32,7 @@ We appreciate your patience and feedback as we work toward a stable release!
 ### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/vvcb/omcp.git
+git clone https://github.com/fastomop/omcp.git
 cd omcp
 ```
 
@@ -314,7 +314,7 @@ If Claude Desktop doesn't recognize the OMCP server:
 
 If you encounter issues not covered here:
 
-- Open an issue on our [GitHub repository](https://github.com/vvcb/omcp/issues)
+- Open an issue on our [GitHub repository](https://github.com/fastomop/omcp/issues)
 - Join our community discussions
 - Check the FAQ section in our documentation
 
