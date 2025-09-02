@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/fastomop-omcp-badge.png)](https://mseep.ai/app/fastomop-omcp)
+
 # omcp
 
 Model Context Protocol Server for the Observational Medical Outcomes Partnership (OMOP) Common Data Model
