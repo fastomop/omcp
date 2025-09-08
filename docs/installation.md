@@ -263,6 +263,33 @@ We are going to use [Librechat](https://www.librechat.ai/) as the end-user inter
          timeout: 60000  # 1 minute timeout for this server, this is the default timeout for MCP servers.
     ```
 
+    Additionally, under your `custom` provider section (endpoints), add an Ollama endpoint configuration. Adjust `models.default` to match the models you actually pulled with Ollama:
+
+    ```yaml
+    custom:
+      endpoints:
+        - name: "Ollama"
+          apiKey: "ollama"
+          baseURL: "http://host.docker.internal:11434/v1/"
+          models:
+            default: ["cogito:14b","llama3.2:3b", "qwen2.5-coder:3b"]
+            fetch: false
+          titleConvo: true
+          titleModel: "current_model"
+          summarize: false
+          summaryModel: "current_model"
+          forcePrompt: false
+          modelDisplayLabel: "Ollama"
+          addParams:
+            stop:
+              - "<|start_header_id|>"
+              - "<|end_header_id|>"
+              - "<|eot_id|>"
+              - "<|reserved_special_token>"
+    ```
+
+    Note: Replace the model names in `models.default` with the ones you have downloaded locally via Ollama.
+
 8. In the project directory, run:
     ```bash
     docker compose up -d
