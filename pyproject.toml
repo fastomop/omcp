@@ -18,7 +18,7 @@ classifiers = [
 ]
 authors = [{ name = "vvcb" }, { name = "shen1802" }, { name = "nikomoegre" }]
 requires-python = ">=3.13"
-dependencies = ["ibis-framework>=10.5.0", "mcp[cli]>=1.6.0"]
+dependencies = ["ibis-framework[duckdb]>=10.5.0", "mcp[cli]>=1.6.0"]
 urls = { Documentation = "https://fastomop.github.io/omcp/", Repository = "https://github.com/fastomop/omcp" }
 
 [project.scripts]
