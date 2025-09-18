@@ -7,11 +7,21 @@ from omcp.db import OmopDatabase
 load_dotenv(find_dotenv())
 
 
-connection_string = os.environ["DB_CONNECTION_STRING"]
+db_type = os.environ.get("DB_TYPE")
+db_path = os.environ.get("DB_PATH")
+
+if db_type == "duckdb":
+    connection_string = f"duckdb:///{db_path}"
+elif db_type == "postgres":
+    # Assuming standard postgres env vars are set for full connection string
+    # This part would need more detail if you want to support full postgres connection string construction
+    connection_string = f"postgresql://{os.environ.get('DB_USERNAME')}:{os.environ.get('DB_PASSWORD')}@{os.environ.get('DB_HOST')}:{os.environ.get('DB_PORT')}/{os.environ.get('DB_DATABASE')}"
+else:
+    raise ValueError("Unsupported DB_TYPE. Must be 'duckdb' or 'postgres'.")
 
 # Default host and port values, can be overridden via environment variables
 host = os.environ.get("MCP_HOST", "localhost")
-port = int(os.environ.get("MCP_PORT", "8000"))
+port = int(os.environ.get("MCP_PORT", "8080"))
 
 mcp_app = FastMCP(name="OMOP MCP Server")
 db = OmopDatabase(

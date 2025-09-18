@@ -214,6 +214,10 @@ class SQLValidator:
         """
 
         errors = []
+        
+        # Allow system queries (health checks and schema queries)
+        if self._is_system_query(sql):
+            return []  # System queries are always allowed
 
         try:
             # Parse the SQL query
@@ -232,11 +236,12 @@ class SQLValidator:
 
             if not tables:
                 errors.append(ex.TableNotFoundError("No tables found in the query."))
-            if not columns:
+            if not columns and "count(*)" not in sql.lower():
                 errors.append(ex.ColumnNotFoundError("No columns found in the query."))
 
-            # Check is OMOP table
-            errors.append(self._check_is_omop_table(parsed_sql))
+            # Check is OMOP table (skip for system tables like information_schema)
+            if not self._has_system_tables(tables):
+                errors.append(self._check_is_omop_table(parsed_sql))
 
             # Check for excluded tables
             errors.append(self._check_unauthorized_tables(tables))
@@ -254,3 +259,44 @@ class SQLValidator:
         finally:
             errors = list(filter(None, errors))  # Remove None values from the list
             return errors
+            
+    def _is_system_query(self, sql: str) -> bool:
+        """
+        Check if this is a system query that should bypass validation.
+        
+        Args:
+            sql (str): The SQL query to check.
+            
+        Returns:
+            bool: True if this is a system query, False otherwise.
+        """
+        sql_lower = sql.lower().strip()
+        
+        # Health check queries
+        if sql_lower.startswith('select 1') or 'health_check' in sql_lower:
+            return True
+            
+        # Information schema queries
+        if 'information_schema' in sql_lower:
+            return True
+            
+        # Other system queries can be added here
+        return False
+        
+    def _has_system_tables(self, tables: t.List[exp.Table]) -> bool:
+        """
+        Check if the query contains system tables like information_schema.
+        
+        Args:
+            tables (List[exp.Table]): List of table expressions.
+            
+        Returns:
+            bool: True if any system tables are found.
+        """
+        system_tables = ['information_schema']
+        
+        for table in tables:
+            if table.name.lower() in system_tables:
+                return True
+                
+        return False
