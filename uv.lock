@@ -1144,7 +1144,7 @@ name = "omcp"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "ibis-framework" },
+    { name = "ibis-framework", extra = ["duckdb"] },
     { name = "mcp", extra = ["cli"] },
 ]
 
@@ -1173,7 +1173,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "ibis-framework", specifier = ">=10.5.0" },
+    { name = "ibis-framework", extras = ["duckdb"], specifier = ">=10.5.0" },
     { name = "ibis-framework", extras = ["duckdb"], marker = "extra == 'duckdb'", specifier = ">=10.5.0" },
     { name = "ibis-framework", extras = ["postgres"], marker = "extra == 'postgres'", specifier = ">=10.5.0" },
     { name = "mcp", extras = ["cli"], specifier = ">=1.6.0" },
