@@ -1,7 +1,3 @@
-"""
-Robust OMCP server with better error handling and graceful shutdown.
-"""
-
 import os
 import sys
 import signal
@@ -12,14 +8,14 @@ from dotenv import load_dotenv, find_dotenv
 
 # Set up logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
 # Import with fallback strategy
 try:
     from omcp.db import OmopDatabase
+
     logger.info("Using enhanced OmopDatabase with robust connection handling")
 except ImportError:
     logger.error("Failed to import OmopDatabase")
@@ -30,16 +26,20 @@ load_dotenv(find_dotenv())
 # Global variable for graceful shutdown
 db = None
 
+
 def signal_handler(signum, frame):
     """Handle shutdown signals gracefully."""
     logger.info(f"Received signal {signum}, shutting down gracefully...")
-    if db and hasattr(db, '_conn') and db._conn:
+    if db and hasattr(db, "_conn") and db._conn:
         try:
             db._conn.disconnect()
             logger.info("Database connection closed")
-        except:
-            pass
+        except Exception as shutdown_error:
+            logger.warning(
+                f"Error closing database connection during shutdown: {shutdown_error}"
+            )
     sys.exit(0)
+
 
 # Set up signal handlers
 signal.signal(signal.SIGTERM, signal_handler)
@@ -90,7 +90,7 @@ try:
         connection_string=connection_string,
         cdm_schema=os.environ.get("CDM_SCHEMA", "base"),
         vocab_schema=os.environ.get("VOCAB_SCHEMA", "base"),
-        read_only=db_read_only
+        read_only=db_read_only,
     )
     logger.info(f"Database initialized successfully (read-only: {db_read_only})")
 except Exception as e:
@@ -186,7 +186,7 @@ def read_query(query: str) -> mcp.types.CallToolResult:
 def main():
     """Main function to run the MCP server."""
     logger.info(f"Starting OMOP MCP Server with {transport_type.upper()} transport...")
-    
+
     try:
         if transport_type == "stdio":
             mcp_app.run(transport="stdio")

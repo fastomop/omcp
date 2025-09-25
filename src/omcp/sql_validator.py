@@ -214,7 +214,7 @@ class SQLValidator:
         """
 
         errors = []
-        
+
         # Allow system queries (health checks and schema queries)
         if self._is_system_query(sql):
             return []  # System queries are always allowed
@@ -259,44 +259,44 @@ class SQLValidator:
         finally:
             errors = list(filter(None, errors))  # Remove None values from the list
             return errors
-            
+
     def _is_system_query(self, sql: str) -> bool:
         """
         Check if this is a system query that should bypass validation.
-        
+
         Args:
             sql (str): The SQL query to check.
-            
+
         Returns:
             bool: True if this is a system query, False otherwise.
         """
         sql_lower = sql.lower().strip()
-        
+
         # Health check queries
-        if sql_lower.startswith('select 1') or 'health_check' in sql_lower:
+        if sql_lower.startswith("select 1") or "health_check" in sql_lower:
             return True
-            
+
         # Information schema queries
-        if 'information_schema' in sql_lower:
+        if "information_schema" in sql_lower:
             return True
-            
+
         # Other system queries can be added here
         return False
-        
+
     def _has_system_tables(self, tables: t.List[exp.Table]) -> bool:
         """
         Check if the query contains system tables like information_schema.
-        
+
         Args:
             tables (List[exp.Table]): List of table expressions.
-            
+
         Returns:
             bool: True if any system tables are found.
         """
-        system_tables = ['information_schema']
-        
+        system_tables = ["information_schema"]
+
         for table in tables:
             if table.name.lower() in system_tables:
                 return True
-                
+
         return False

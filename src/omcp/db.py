@@ -43,7 +43,7 @@ class OmopDatabase:
         self._conn = None
         self._last_connect_time = 0
         self._connect_retry_delay = 1.0  # Start with 1 second retry
-        
+
         self.conn: BaseBackend | Any = None  # Keep for backwards compatibility
         self.supported_databases = [
             "duckdb",
@@ -108,7 +108,7 @@ class OmopDatabase:
         )
         self.cdm_schema = cdm_schema
         self.vocab_schema = vocab_schema
-        
+
         # Try initial connection
         logger.info(f"Initializing connection to: {connection_string}")
         try:
@@ -131,12 +131,12 @@ class OmopDatabase:
                 self._reconnect()
             # Update backwards compatible conn attribute
             self.conn = self._conn
-    
+
     def _is_connection_alive(self) -> bool:
         """Check if the current connection is still alive."""
         if self._conn is None:
             return False
-        
+
         try:
             # Try a simple query
             self._conn.sql("SELECT 1").limit(1).execute()
@@ -144,61 +144,76 @@ class OmopDatabase:
         except Exception as e:
             logger.warning(f"Connection health check failed: {e}")
             return False
-    
+
     def _reconnect(self):
         """Reconnect to the database with retry logic."""
         # Clean up old connection
         if self._conn:
             try:
                 self._conn.disconnect()
-            except:
-                pass
+            except Exception as disconnect_error:
+                logger.warning(
+                    f"Error disconnecting previous connection: {disconnect_error}"
+                )
             self._conn = None
-        
+
         # Retry connection with backoff
         max_retries = 3
         for attempt in range(max_retries):
             try:
-                logger.info(f"Connecting to database (attempt {attempt + 1}/{max_retries})...")
-                
-                if not self.connection_string.startswith(tuple(self.supported_databases)):
+                logger.info(
+                    f"Connecting to database (attempt {attempt + 1}/{max_retries})..."
+                )
+
+                if not self.connection_string.startswith(
+                    tuple(self.supported_databases)
+                ):
                     raise ValueError(
                         f"Unsupported database type. Supported: {', '.join(self.supported_databases)}"
                     )
-                
+
                 # Special handling for DuckDB to avoid locks
                 if self.connection_string.startswith("duckdb://"):
-                    if self.read_only and "?access_mode=read_only" not in self.connection_string:
+                    if (
+                        self.read_only
+                        and "?access_mode=read_only" not in self.connection_string
+                    ):
                         # Add read-only parameter if not already present
-                        connection_url = f"{self.connection_string}?access_mode=read_only"
-                        logger.info("Using DuckDB read-only mode to prevent file locking")
+                        connection_url = (
+                            f"{self.connection_string}?access_mode=read_only"
+                        )
+                        logger.info(
+                            "Using DuckDB read-only mode to prevent file locking"
+                        )
                     else:
                         connection_url = self.connection_string
                     self._conn = ibis.connect(connection_url)
                 else:
                     self._conn = ibis.connect(self.connection_string)
-                
+
                 # Test the connection
                 self._conn.sql("SELECT 1").limit(1).execute()
-                
+
                 logger.info("Database connection established successfully")
                 self._last_connect_time = time.time()
                 self._connect_retry_delay = 1.0  # Reset retry delay
                 return
-                
+
             except Exception as e:
                 logger.error(f"Connection attempt {attempt + 1} failed: {e}")
                 if attempt < max_retries - 1:
                     time.sleep(self._connect_retry_delay)
                     self._connect_retry_delay = min(self._connect_retry_delay * 2, 10)
                 else:
-                    raise ConnectionError(f"Failed to connect after {max_retries} attempts: {str(e)}")
+                    raise ConnectionError(
+                        f"Failed to connect after {max_retries} attempts: {str(e)}"
+                    )
 
     @lru_cache(maxsize=128)
     def get_information_schema(self) -> Dict[str, List[str]]:
         """Get the information schema of the database."""
         self._ensure_connected()
-        
+
         try:
             with self._conn_lock:
                 at = ",".join(f"'{i}'" for i in self.allowed_tables)
@@ -258,11 +273,11 @@ class OmopDatabase:
 
         except ExceptionGroup:
             raise
-        except Exception as e:
+        except Exception:
             # Clear connection on error
             self._conn = None
             self.conn = None
-            
+
             # Try one more time after reconnecting
             try:
                 self._ensure_connected()
@@ -272,11 +287,14 @@ class OmopDatabase:
                     return df.to_csv(index=False)
             except Exception as retry_error:
                 raise ex.QueryError(f"Failed to execute query: {str(retry_error)}")
-    
+
     def __del__(self):
         """Clean up connection on deletion."""
         if self._conn:
             try:
                 self._conn.disconnect()
-            except:
-                pass
+                logger.debug("Database connection closed during cleanup")
+            except Exception as cleanup_error:
+                logger.warning(
+                    f"Error closing connection during cleanup: {cleanup_error}"
+                )
