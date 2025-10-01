@@ -6,11 +6,11 @@ import mcp
 from dotenv import load_dotenv, find_dotenv
 from omcp.config import langfuse, observe, logger
 
-import json
 import uuid
 import time
 import traceback
 from functools import wraps
+
 
 # --- Per-tool decorator to capture context + Langfuse trace ---
 def capture_context(tool_name=None):
@@ -21,6 +21,7 @@ def capture_context(tool_name=None):
       - starts a Langfuse per-request trace/span/generation (if enabled)
       - records input/output to Langfuse (if enabled)
     """
+
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -29,33 +30,51 @@ def capture_context(tool_name=None):
 
             # Enhanced context extraction including potential prompt information
             extracted = {}
-            
+
             # Common names that may hold context in MCP payloads
             possible_keys = (
-                "payload", "messages", "prompt", "input", "tool_input", "data", "query",
-                "conversation", "context", "user_message", "system_message", "chat_history",
-                "request_context", "llm_context", "conversation_history"
+                "payload",
+                "messages",
+                "prompt",
+                "input",
+                "tool_input",
+                "data",
+                "query",
+                "conversation",
+                "context",
+                "user_message",
+                "system_message",
+                "chat_history",
+                "request_context",
+                "llm_context",
+                "conversation_history",
             )
-            
+
             # 1) Extract from kwargs
             for k in possible_keys:
                 if k in kwargs:
                     extracted[k] = kwargs[k]
-            
+
             # 2) Extract from args (often the first arg is the payload or the query string)
             if args:
                 for i, arg in enumerate(args):
                     arg_key = f"arg_{i}"
                     extracted[arg_key] = arg
-                    
+
                     # If the argument is a dict, look for prompt-related keys
                     if isinstance(arg, dict):
-                        for prompt_key in ["prompt", "messages", "conversation", "context"]:
+                        for prompt_key in [
+                            "prompt",
+                            "messages",
+                            "conversation",
+                            "context",
+                        ]:
                             if prompt_key in arg:
                                 extracted[f"nested_{prompt_key}"] = arg[prompt_key]
-            
+
             # 3) Try to extract from the current execution context (if available)
             import inspect
+
             frame = inspect.currentframe()
             try:
                 # Look for any variables in calling frames that might contain prompt info
@@ -64,19 +83,26 @@ def capture_context(tool_name=None):
                     caller_locals = caller_frame.f_locals
                     for var_name in ["prompt", "messages", "conversation", "request"]:
                         if var_name in caller_locals:
-                            extracted[f"caller_{var_name}"] = str(caller_locals[var_name])[:1000]  # Truncate for safety
+                            extracted[f"caller_{var_name}"] = str(
+                                caller_locals[var_name]
+                            )[:1000]  # Truncate for safety
             except Exception:
                 pass  # Ignore frame inspection errors
             finally:
                 del frame  # Prevent reference cycles
-            
+
             # 4) Capture environment variables that might contain relevant context
             env_context = {}
-            env_keys = ["MCP_CLIENT_INFO", "CONVERSATION_ID", "SESSION_ID", "USER_CONTEXT"]
+            env_keys = [
+                "MCP_CLIENT_INFO",
+                "CONVERSATION_ID",
+                "SESSION_ID",
+                "USER_CONTEXT",
+            ]
             for env_key in env_keys:
                 if os.environ.get(env_key):
                     env_context[env_key] = os.environ.get(env_key)
-            
+
             if env_context:
                 extracted["environment_context"] = env_context
 
@@ -94,54 +120,67 @@ def capture_context(tool_name=None):
             # Start Langfuse logging for this single call (if enabled)
             if langfuse:
                 try:
-                    with langfuse.start_as_current_generation(name=f"{call_meta['tool']}_{request_id}") as gen:
+                    with langfuse.start_as_current_generation(
+                        name=f"{call_meta['tool']}_{request_id}"
+                    ) as gen:
                         # Prepare comprehensive input data
                         input_data = {
                             "extracted_context": extracted,
                             "call_metadata": call_meta,
-                            "raw_args": [str(arg)[:500] for arg in args],  # Truncated string representations
+                            "raw_args": [
+                                str(arg)[:500] for arg in args
+                            ],  # Truncated string representations
                         }
-                        
+
                         # Add prompt-specific metadata if found
                         prompt_metadata = {}
                         for key, value in extracted.items():
-                            if any(prompt_word in key.lower() for prompt_word in ["prompt", "message", "conversation"]):
+                            if any(
+                                prompt_word in key.lower()
+                                for prompt_word in ["prompt", "message", "conversation"]
+                            ):
                                 prompt_metadata[key] = value
-                        
+
                         if prompt_metadata:
                             input_data["prompt_related_data"] = prompt_metadata
                             # Log specifically that we found prompt-related content
-                            logger.info(f"Captured prompt-related metadata for {call_meta['tool']}: {list(prompt_metadata.keys())}")
-                        
+                            logger.info(
+                                f"Captured prompt-related metadata for {call_meta['tool']}: {list(prompt_metadata.keys())}"
+                            )
+
                         gen.update(input=input_data)
-                        
+
                         try:
                             response = func(*args, **kwargs)
                             # Update with output - removed success status
                             gen.update(
                                 output={
                                     "response": response,
-                                    "response_type": type(response).__name__
+                                    "response_type": type(response).__name__,
                                 }
                             )
                             return response
-                            
+
                         except Exception as ex:
                             err_info = {
                                 "error": str(ex),
                                 "error_type": type(ex).__name__,
-                                "traceback": traceback.format_exc()
+                                "traceback": traceback.format_exc(),
                             }
                             gen.update(output=err_info, status="error")
                             logger.error(f"Tool {call_meta['tool']} failed: {str(ex)}")
                             raise
-                            
+
                 except Exception as langfuse_error:
                     # If Langfuse fails for any reason, don't crash the server
-                    logger.exception("Langfuse logging failed for tool %s (request %s): %s", 
-                                   call_meta["tool"], request_id, str(langfuse_error))
+                    logger.exception(
+                        "Langfuse logging failed for tool %s (request %s): %s",
+                        call_meta["tool"],
+                        request_id,
+                        str(langfuse_error),
+                    )
                     # Fall through to execute function without Langfuse logging
-            
+
             # Execute function without Langfuse logging (if disabled or failed)
             try:
                 response = func(*args, **kwargs)
@@ -151,11 +190,14 @@ def capture_context(tool_name=None):
                 raise
 
         return wrapper
+
     return decorator
+
 
 # Import with fallback strategy
 try:
     from omcp.db import OmopDatabase
+
     logger.info("Using enhanced OmopDatabase with robust connection handling")
 except ImportError:
     logger.error("Failed to import OmopDatabase")
@@ -256,7 +298,9 @@ def get_information_schema() -> mcp.types.CallToolResult:
     try:
         logger.debug("Getting information schema...")
         if langfuse:
-            with langfuse.start_as_current_generation(name="get_information_schema") as information_schema:
+            with langfuse.start_as_current_generation(
+                name="get_information_schema"
+            ) as information_schema:
                 result = db.get_information_schema()
                 logger.debug("Information schema retrieved successfully")
                 result = mcp.types.CallToolResult(
@@ -337,6 +381,7 @@ def read_query(query: str) -> mcp.types.CallToolResult:
             ],
         )
 
+
 def main():
     """Main function to run the MCP server."""
     logger.info(f"Starting OMOP MCP Server with {transport_type.upper()} transport...")
@@ -348,6 +393,7 @@ def main():
             logger.info(f"Server will be available at http://{host}:{port}")
             # Add initialization delay to prevent timing issues
             import time
+
             time.sleep(1)  # Give the server time to fully initialize
             mcp_app.run(transport="sse")
     except KeyboardInterrupt:
