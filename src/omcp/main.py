@@ -1,16 +1,242 @@
 import os
 import sys
 import signal
-import logging
 from mcp.server.fastmcp import FastMCP
 import mcp
 from dotenv import load_dotenv, find_dotenv
+from omcp.config import langfuse, logger
+from omcp.trace_context import read_trace_context
 
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
+import uuid
+import time
+import traceback
+from functools import wraps
+
+# OpenTelemetry context propagation
+from opentelemetry.propagate import extract
+from opentelemetry import context as otel_context_api
+
+
+# --- Per-tool decorator to capture context + Langfuse trace ---
+def capture_context(tool_name=None):
+    """
+    Decorator to capture the incoming MCP tool call:
+      - tries to extract common context fields (messages, prompt, input, payload)
+      - attempts to capture any LLM prompt context if available
+      - starts a Langfuse per-request trace/span/generation (if enabled)
+      - records input/output to Langfuse (if enabled)
+    """
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            request_id = str(uuid.uuid4())
+            ts = time.strftime("%d/%m/%y %H:%M:%S", time.localtime())
+
+            extracted = {}
+
+            # Common names that may hold context in MCP payloads
+            possible_keys = (
+                "payload",
+                "messages",
+                "prompt",
+                "input",
+                "tool_input",
+                "data",
+                "query",
+                "conversation",
+                "context",
+                "user_message",
+                "system_message",
+                "chat_history",
+                "request_context",
+                "llm_context",
+                "conversation_history",
+            )
+
+            # 1) Extract from kwargs
+            for k in possible_keys:
+                if k in kwargs:
+                    extracted[k] = kwargs[k]
+
+            # 2) Extract from args
+            if args:
+                for i, arg in enumerate(args):
+                    arg_key = f"arg_{i}"
+                    extracted[arg_key] = arg
+
+                    # If the argument is a dict, look for prompt-related keys
+                    if isinstance(arg, dict):
+                        for prompt_key in [
+                            "prompt",
+                            "messages",
+                            "conversation",
+                            "context",
+                        ]:
+                            if prompt_key in arg:
+                                extracted[f"nested_{prompt_key}"] = arg[prompt_key]
+
+            # 3) Try to extract from the current execution context
+            import inspect
+
+            frame = inspect.currentframe()
+            try:
+                # Look for any variables in calling frames that might contain prompt info
+                caller_frame = frame.f_back.f_back if frame and frame.f_back else None
+                if caller_frame:
+                    caller_locals = caller_frame.f_locals
+                    for var_name in ["prompt", "messages", "conversation", "request"]:
+                        if var_name in caller_locals:
+                            extracted[f"caller_{var_name}"] = str(
+                                caller_locals[var_name]
+                            )[:1000]  # Truncate for safety
+            except Exception:
+                pass  # Ignore frame inspection errors
+            finally:
+                del frame  # Prevent reference cycles
+
+            # 4) Capture environment variables that might contain relevant context
+            env_context = {}
+            env_keys = [
+                "MCP_CLIENT_INFO",
+                "CONVERSATION_ID",
+                "SESSION_ID",
+                "USER_CONTEXT",
+            ]
+            for env_key in env_keys:
+                if os.environ.get(env_key):
+                    env_context[env_key] = os.environ.get(env_key)
+
+            if env_context:
+                extracted["environment_context"] = env_context
+
+            # Enhanced call metadata
+            call_meta = {
+                "tool": tool_name or func.__name__,
+                "request_id": request_id,
+                "timestamp": ts,
+                "func_name": func.__name__,
+                "func_args_count": len(args),
+                # Truncated representations for logging
+                "func_args_repr": repr(args)[:1000] if args else "[]",
+            }
+
+            # Start Langfuse logging for this single call (if enabled)
+            if langfuse:
+                try:
+                    # Read trace context from shared file (propagated from fastomop)
+                    trace_ctx = read_trace_context()
+                    traceparent = trace_ctx.get("traceparent")
+
+                    # Prepare comprehensive input data
+                    input_data = {
+                        "extracted_context": extracted,
+                        "call_metadata": call_meta,
+                        "raw_args": [
+                            str(arg)[:500] for arg in args
+                        ],  # Truncated string representations
+                    }
+
+                    # Add prompt-specific metadata if found
+                    prompt_metadata = {}
+                    for key, value in extracted.items():
+                        if any(
+                            prompt_word in key.lower()
+                            for prompt_word in ["prompt", "message", "conversation"]
+                        ):
+                            prompt_metadata[key] = value
+
+                    if prompt_metadata:
+                        input_data["prompt_related_data"] = prompt_metadata
+                        # Log specifically that we found prompt-related content
+                        logger.info(
+                            f"Captured prompt-related metadata for {call_meta['tool']}: {list(prompt_metadata.keys())}"
+                        )
+
+                    # Extract OpenTelemetry context from W3C Trace Context headers
+                    # This properly propagates parent-child relationships across processes
+                    context_token = None
+                    if traceparent:
+                        # Build carrier dict with W3C headers
+                        carrier = {"traceparent": traceparent}
+                        if trace_ctx.get("tracestate"):
+                            carrier["tracestate"] = trace_ctx["tracestate"]
+
+                        # Extract context using OpenTelemetry propagator
+                        extracted_context = extract(carrier)
+
+                        # Attach the extracted context to make it current
+                        # This allows Langfuse to automatically use it for span creation
+                        context_token = otel_context_api.attach(extracted_context)
+
+                        logger.info(
+                            f"Linking {call_meta['tool']} to parent trace (OpenTelemetry context)"
+                        )
+                    else:
+                        # No parent context, create standalone span
+                        logger.debug(
+                            f"No parent trace context, creating standalone span for {call_meta['tool']}"
+                        )
+
+                    try:
+                        # Use context manager for span
+                        # Note: Using start_as_current_span for DB operations (not LLM calls)
+                        # The span will automatically use the attached context
+                        with langfuse.start_as_current_span(
+                            name=call_meta["tool"]
+                        ) as span:
+                            # Update with input data
+                            span.update(input=input_data)
+
+                            try:
+                                response = func(*args, **kwargs)
+                                # Update with output
+                                span.update(
+                                    output={
+                                        "response": response,
+                                        "response_type": type(response).__name__,
+                                    }
+                                )
+                                return response
+
+                            except Exception as ex:
+                                err_info = {
+                                    "error": str(ex),
+                                    "error_type": type(ex).__name__,
+                                    "traceback": traceback.format_exc(),
+                                }
+                                span.update(output=err_info)
+                                logger.error(
+                                    f"Tool {call_meta['tool']} failed: {str(ex)}"
+                                )
+                                raise
+                    finally:
+                        # Detach the context to restore the previous context
+                        if context_token is not None:
+                            otel_context_api.detach(context_token)
+
+                except Exception as langfuse_error:
+                    # If Langfuse fails for any reason, don't crash the server
+                    logger.exception(
+                        "Langfuse logging failed for tool %s (request %s): %s",
+                        call_meta["tool"],
+                        request_id,
+                        str(langfuse_error),
+                    )
+                    # Fall through to execute function without Langfuse logging
+
+            # Execute function without Langfuse logging (if disabled or failed)
+            try:
+                response = func(*args, **kwargs)
+                return response
+            except Exception as func_error:
+                logger.error(f"Function execution failed: {str(func_error)}")
+                raise
+
+        return wrapper
+
+    return decorator
+
 
 # Import with fallback strategy
 try:
@@ -102,6 +328,7 @@ except Exception as e:
     name="Get_Information_Schema",
     description="Get the information schema of the OMOP database.",
 )
+@capture_context(tool_name="Get_Information_Schema")
 def get_information_schema() -> mcp.types.CallToolResult:
     """Get the information schema of the OMOP database.
 
@@ -114,6 +341,7 @@ def get_information_schema() -> mcp.types.CallToolResult:
     """
     try:
         logger.debug("Getting information schema...")
+        # Note: @capture_context decorator already handles Langfuse tracing
         result = db.get_information_schema()
         logger.debug("Information schema retrieved successfully")
         return mcp.types.CallToolResult(
@@ -137,6 +365,7 @@ def get_information_schema() -> mcp.types.CallToolResult:
 @mcp_app.tool(
     name="Select_Query", description="Execute a select query against the OMOP database."
 )
+@capture_context(tool_name="Select_Query")
 def read_query(query: str) -> mcp.types.CallToolResult:
     """Run a SQL query against the OMOP database.
 
@@ -192,7 +421,11 @@ def main():
             mcp_app.run(transport="stdio")
         elif transport_type == "sse":
             logger.info(f"Server will be available at http://{host}:{port}")
-            mcp_app.run(transport="sse", host=host, port=port)
+            # Add initialization delay to prevent timing issues
+            import time
+
+            time.sleep(1)  # Give the server time to fully initialize
+            mcp_app.run(transport="sse")
     except KeyboardInterrupt:
         logger.info("Server stopped by user")
     except Exception as e:
