@@ -9,14 +9,22 @@ Langfuse V3 Note:
 """
 
 import os
-import tempfile
 import json
+import platform
+import tempfile
 from pathlib import Path
 from typing import Optional, Dict
 
 
 # Shared trace context file path (same as fastomop)
-default_path = Path(tempfile.gettempdir()) / ".fastomop_langfuse_trace_context.json"
+# Use platform-specific temp directory for cross-platform compatibility
+if platform.system() == "Windows":
+    default_path = Path(tempfile.gettempdir()) / ".fastomop_langfuse_trace_context.json"
+else:
+    # On Unix-like systems (macOS/Linux), use /tmp for consistency across processes
+    # tempfile.gettempdir() can return different paths in different contexts on macOS
+    default_path = Path("/tmp") / ".fastomop_langfuse_trace_context.json"
+
 TRACE_CONTEXT_FILE = Path(
     os.environ.get("LANGFUSE_TRACE_CONTEXT_FILE", str(default_path))
 )
@@ -44,10 +52,16 @@ def read_trace_context() -> Dict[str, Optional[str]]:
                     # Backward compatibility: also read old trace_id format
                     "trace_id": context.get("trace_id"),
                 }
-    except Exception:
+    except Exception as e:
         # Non-critical error, return empty context
-        # Don't log here to avoid noise, caller can decide how to handle None values
-        pass
+        # Only log if file exists but can't be read (actual error)
+        if TRACE_CONTEXT_FILE.exists():
+            import logging
+
+            logger = logging.getLogger("omcp")
+            logger.warning(
+                f"Failed to read trace context from {TRACE_CONTEXT_FILE}: {e}"
+            )
 
     return {
         "traceparent": None,

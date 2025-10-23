@@ -4,8 +4,14 @@ from pathlib import Path
 from dotenv import load_dotenv
 from langfuse import Langfuse
 from langfuse import observe
+from opentelemetry.propagate import set_global_textmap
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
 load_dotenv()
+
+# Configure OpenTelemetry W3C Trace Context propagator
+# This is required for cross-process trace propagation with Langfuse V3
+set_global_textmap(TraceContextTextMapPropagator())
 
 # Global configuration variables
 ENABLE_LOGGING = os.environ.get("ENABLE_LOGGING", "true").lower() == "true"
