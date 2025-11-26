@@ -13,6 +13,9 @@ import databricks.sql as databricks_sql
 from ibis.backends.databricks import Backend as DatabricksBackend
 
 from omcp.sql_validator import SQLValidator
+from urllib.parse import urlparse, parse_qs
+import databricks.sql as databricks_sql
+from ibis.backends.databricks import Backend as DatabricksBackend
 
 logger = logging.getLogger(__name__)
 
