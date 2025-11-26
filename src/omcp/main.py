@@ -290,8 +290,26 @@ elif db_type == "postgres":
         f"{os.environ.get('DB_PASSWORD')}@{os.environ.get('DB_HOST')}:"
         f"{os.environ.get('DB_PORT')}/{os.environ.get('DB_DATABASE')}"
     )
+elif db_type == "databricks":
+    # Databricks connection string format
+    db_token = os.environ.get("DB_TOKEN")
+    db_host = os.environ.get("DB_HOST")
+    db_http_path = os.environ.get("DB_HTTP_PATH")
+    db_catalog = os.environ.get("DB_CATALOG", "hive_metastore")
+    db_schema = os.environ.get("DB_SCHEMA", "default")
+
+    # URL encode the parameters properly
+    from urllib.parse import quote_plus
+    connection_string = (
+        f"databricks://?server_hostname={quote_plus(db_host)}"
+        f"&http_path={quote_plus(db_http_path)}"
+        f"&access_token={quote_plus(db_token)}"
+        f"&catalog={quote_plus(db_catalog)}"
+        f"&schema={quote_plus(db_schema)}"
+    )
+    logger.info(f"Using Databricks with catalog={db_catalog}, schema={db_schema}")
 else:
-    raise ValueError("Unsupported DB_TYPE. Must be 'duckdb' or 'postgres'.")
+    raise ValueError("Unsupported DB_TYPE. Must be 'duckdb', 'postgres', or 'databricks'.")
 
 logger.info(f"Initializing OMCP server with {db_type} database...")
 
