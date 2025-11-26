@@ -48,11 +48,14 @@ uv sync --extra duckdb
 
 #### With PostgreSQL Support
 
-!!! warning
-    Not implemented yet.
-
 ```bash
 uv sync --extra postgres
+```
+
+#### With Databricks Support
+
+```bash
+uv sync --extra databricks
 ```
 
 ### Step 3: Activate the virtual environment
@@ -61,7 +64,7 @@ uv sync --extra postgres
 source .venv/bin/activate  # On Windows use: .venv\Scripts\activate
 ```
 
-## Using the Synthetic Database 🗄️
+### Using the Synthetic Database (DuckDB) 🗄️
 
 OMCP comes with a synthetic OMOP database (located at `/synthetic_data/synthea.duckdb`) for testing and development purposes. This database follows the OMOP Common Data Model and contains fictional patient data available at [Synthea](https://synthetichealth.github.io/synthea/).
 
@@ -156,6 +159,7 @@ notepad %APPDATA%\Claude\claude_desktop_config.json
 2. Add the following configuration:
 
 ```json
+// macOS
 {
   "mcpServers": {
     "omop_mcp": {
@@ -171,7 +175,29 @@ notepad %APPDATA%\Claude\claude_desktop_config.json
 }
 ```
 
-Replace `/ABSOLUTE/PATH/TO/PARENT/FOLDER THAT CONTAINS main.py` with the actual path to your OMCP installation.
+```json
+// Windows
+{
+ "mcpServers": {
+    "omop_mcp": {
+      "command": "ABSOLUTE\\PAT\\TO\\UV\\uv.exe",
+      "args": [
+        "--directory",
+        "/ABSOLUTE/PATH/TO/OMCP/FOLDER",
+        "run",
+        "python",
+        "-m",
+        "omcp.main"
+      ]
+    }
+  }
+ }
+```
+
+On mac replace `/ABSOLUTE/PATH/TO/PARENT/FOLDER THAT CONTAINS main.py` with the actual path to your OMCP installation.
+
+On Windows replace `/ABSOLUTE/PATH/TO/OMCP/FOLDER` with the actual path to your OMCP directory.
+
 
 ### Step 3: Launch Claude Desktop
 
