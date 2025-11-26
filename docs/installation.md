@@ -64,7 +64,7 @@ uv sync --extra databricks
 source .venv/bin/activate  # On Windows use: .venv\Scripts\activate
 ```
 
-### Using the Synthetic Database (DuckDB) 🗄️
+## Using the Synthetic Database (DuckDB) 🗄️
 
 OMCP comes with a synthetic OMOP database (located at `/synthetic_data/synthea.duckdb`) for testing and development purposes. This database follows the OMOP Common Data Model and contains fictional patient data available at [Synthea](https://synthetichealth.github.io/synthea/).
 
