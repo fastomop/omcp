@@ -300,6 +300,7 @@ elif db_type == "databricks":
 
     # URL encode the parameters properly
     from urllib.parse import quote_plus
+
     connection_string = (
         f"databricks://?server_hostname={quote_plus(db_host)}"
         f"&http_path={quote_plus(db_http_path)}"
@@ -309,7 +310,9 @@ elif db_type == "databricks":
     )
     logger.info(f"Using Databricks with catalog={db_catalog}, schema={db_schema}")
 else:
-    raise ValueError("Unsupported DB_TYPE. Must be 'duckdb', 'postgres', or 'databricks'.")
+    raise ValueError(
+        "Unsupported DB_TYPE. Must be 'duckdb', 'postgres', or 'databricks'."
+    )
 
 logger.info(f"Initializing OMCP server with {db_type} database...")
 
