@@ -11,6 +11,7 @@ import uuid
 import time
 import traceback
 from functools import wraps
+from urllib.parse import quote_plus
 
 # OpenTelemetry context propagation
 from opentelemetry.propagate import extract
@@ -297,9 +298,6 @@ elif db_type == "databricks":
     db_http_path = os.environ.get("DB_HTTP_PATH")
     db_catalog = os.environ.get("DB_CATALOG", "hive_metastore")
     db_schema = os.environ.get("DB_SCHEMA", "default")
-
-    # URL encode the parameters properly
-    from urllib.parse import quote_plus
 
     connection_string = (
         f"databricks://?server_hostname={quote_plus(db_host)}"
