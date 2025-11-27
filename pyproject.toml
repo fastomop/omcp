@@ -34,6 +34,10 @@ postgres = [
     "ibis-framework[postgres]>=10.5.0",
     "psycopg>=3.2.6",
 ]
+databricks = [
+    "ibis-framework[databricks]>=10.5.0",
+    "databricks-sql-connector>=3.0.0",
+]
 
 [build-system]
 requires = ["hatchling"]
