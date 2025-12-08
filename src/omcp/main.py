@@ -374,10 +374,7 @@ def get_information_schema() -> mcp.types.CallToolResult:
             content=[
                 mcp.types.TextContent(type="text", text=result),
             ],
-            _meta={
-                "database_type": database_type,
-                "schema_name": schema_name
-            }
+            _meta={"database_type": database_type, "schema_name": schema_name},
         )
     except Exception as e:
         logger.error(f"Failed to retrieve schema information: {e}")
@@ -538,7 +535,6 @@ def lookup_condition(term: str, limit: int = 10) -> mcp.types.CallToolResult:
                 )
             ],
         )
-
 
 
 def main():

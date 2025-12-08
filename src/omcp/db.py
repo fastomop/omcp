@@ -115,7 +115,9 @@ class OmopDatabase:
         self.vocab_schema = vocab_schema
 
         # Determine database dialect from connection string
-        self.target_dialect = self._get_dialect_from_connection_string(connection_string)
+        self.target_dialect = self._get_dialect_from_connection_string(
+            connection_string
+        )
 
         # Try initial connection
         logger.info(f"Initializing connection to: {connection_string}")
@@ -149,7 +151,9 @@ class OmopDatabase:
             return "duckdb"
         else:
             # Default to postgres for unknown dialects
-            logger.warning(f"Unknown dialect for connection string: {connection_string}, defaulting to postgres")
+            logger.warning(
+                f"Unknown dialect for connection string: {connection_string}, defaulting to postgres"
+            )
             return "postgres"
 
     def _ensure_connected(self):
@@ -335,13 +339,19 @@ class OmopDatabase:
             transpiled_query = query
 
             if self.target_dialect != source_dialect:
-                logger.info(f"Transpiling query from {source_dialect} to {self.target_dialect}")
+                logger.info(
+                    f"Transpiling query from {source_dialect} to {self.target_dialect}"
+                )
                 try:
-                    transpiled_query = transpile_query(query, source_dialect, self.target_dialect)
+                    transpiled_query = transpile_query(
+                        query, source_dialect, self.target_dialect
+                    )
                     logger.debug(f"Original query: {query}")
                     logger.debug(f"Transpiled query: {transpiled_query}")
                 except Exception as transpile_error:
-                    logger.warning(f"Transpilation failed: {transpile_error}, using original query")
+                    logger.warning(
+                        f"Transpilation failed: {transpile_error}, using original query"
+                    )
                     # If transpilation fails, fall back to original query
                     transpiled_query = query
 

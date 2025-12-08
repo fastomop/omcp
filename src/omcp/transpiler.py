@@ -9,17 +9,17 @@ from pathlib import Path
 
 def _create_datediff(left: exp.Expression, right: exp.Expression) -> exp.Expression:
     """Create a DATEDIFF(left, right) expression."""
-    return exp.Anonymous(
-        this="DATEDIFF",
-        expressions=[left, right]
-    )
+    return exp.Anonymous(this="DATEDIFF", expressions=[left, right])
 
 
 def _unwrap_timestamp_cast(expr: exp.Expression) -> exp.Expression:
     """Remove CAST(... AS TIMESTAMP) wrapper if present, returning the inner expression."""
     if isinstance(expr, exp.Cast):
         to_type = expr.to
-        if isinstance(to_type, exp.DataType) and to_type.this == exp.DataType.Type.TIMESTAMP:
+        if (
+            isinstance(to_type, exp.DataType)
+            and to_type.this == exp.DataType.Type.TIMESTAMP
+        ):
             return expr.this
     return expr
 
@@ -69,7 +69,9 @@ def _is_epoch_days_pattern(node: exp.Expression):
         return None
 
     to_type = node.to
-    if not (isinstance(to_type, exp.DataType) and to_type.this == exp.DataType.Type.BIGINT):
+    if not (
+        isinstance(to_type, exp.DataType) and to_type.this == exp.DataType.Type.BIGINT
+    ):
         return None
 
     inner = node.this
@@ -157,14 +159,16 @@ def _is_daterange_call(node: exp.Expression):
     return None
 
 
-def _create_struct_for_range(start_date: exp.Expression, end_date: exp.Expression) -> exp.Expression:
+def _create_struct_for_range(
+    start_date: exp.Expression, end_date: exp.Expression
+) -> exp.Expression:
     """
     Create a STRUCT(start_date AS start, end_date AS end) for Databricks range representation.
     """
     return exp.Struct(
         expressions=[
             exp.PropertyEQ(this=exp.Identifier(this="start"), expression=start_date),
-            exp.PropertyEQ(this=exp.Identifier(this="end"), expression=end_date)
+            exp.PropertyEQ(this=exp.Identifier(this="end"), expression=end_date),
         ]
     )
 
@@ -207,7 +211,10 @@ def _is_range_intersection_operator(node: exp.Expression):
             # Dot expressions that access .start or .end are field accesses, not ranges
             if isinstance(expr, exp.Dot):
                 field_name = expr.expression
-                if isinstance(field_name, exp.Identifier) and field_name.this in ("start", "end"):
+                if isinstance(field_name, exp.Identifier) and field_name.this in (
+                    "start",
+                    "end",
+                ):
                     return False
                 return True
 
@@ -227,7 +234,11 @@ def _is_range_intersection_operator(node: exp.Expression):
                     db = expr.args.get("db")
                     if db and isinstance(db, exp.Identifier):
                         # This is a 3-level identifier - check if it's a field access
-                        if this and isinstance(this, exp.Identifier) and this.this in ("start", "end"):
+                        if (
+                            this
+                            and isinstance(this, exp.Identifier)
+                            and this.this in ("start", "end")
+                        ):
                             return False
                     # 2-level identifier (table.column) is a range reference
                     return True
@@ -249,7 +260,9 @@ def _unwrap_paren(expr: exp.Expression) -> exp.Expression:
     return expr
 
 
-def _create_range_overlap_condition(left_range: exp.Expression, right_range: exp.Expression) -> exp.Expression:
+def _create_range_overlap_condition(
+    left_range: exp.Expression, right_range: exp.Expression
+) -> exp.Expression:
     """
     Create overlap condition for two ranges in Databricks:
     left_range.start <= right_range.end AND right_range.start <= left_range.end
@@ -267,11 +280,13 @@ def _create_range_overlap_condition(left_range: exp.Expression, right_range: exp
 
     return exp.And(
         this=exp.LTE(this=left_start, expression=right_end),
-        expression=exp.LTE(this=right_start, expression=left_end)
+        expression=exp.LTE(this=right_start, expression=left_end),
     )
 
 
-def _create_range_intersection(left_range: exp.Expression, right_range: exp.Expression) -> exp.Expression:
+def _create_range_intersection(
+    left_range: exp.Expression, right_range: exp.Expression
+) -> exp.Expression:
     """
     Create range intersection for two ranges in Databricks:
     STRUCT(GREATEST(left.start, right.start) AS start, LEAST(left.end, right.end) AS end)
@@ -287,13 +302,17 @@ def _create_range_intersection(left_range: exp.Expression, right_range: exp.Expr
     right_start = exp.Dot(this=right_range, expression=exp.Identifier(this="start"))
     right_end = exp.Dot(this=right_range, expression=exp.Identifier(this="end"))
 
-    greatest_start = exp.Anonymous(this="GREATEST", expressions=[left_start, right_start])
+    greatest_start = exp.Anonymous(
+        this="GREATEST", expressions=[left_start, right_start]
+    )
     least_end = exp.Anonymous(this="LEAST", expressions=[left_end, right_end])
 
     return exp.Struct(
         expressions=[
-            exp.PropertyEQ(this=exp.Identifier(this="start"), expression=greatest_start),
-            exp.PropertyEQ(this=exp.Identifier(this="end"), expression=least_end)
+            exp.PropertyEQ(
+                this=exp.Identifier(this="start"), expression=greatest_start
+            ),
+            exp.PropertyEQ(this=exp.Identifier(this="end"), expression=least_end),
         ]
     )
 
@@ -321,7 +340,10 @@ def _transform_window_spec(node: exp.Expression) -> exp.Expression:
                     # Check if DataType.this is an Interval with unit=FOLLOWING
                     if isinstance(to_type.this, exp.Interval):
                         interval_datatype = to_type.this
-                        if isinstance(interval_datatype.unit, exp.Var) and interval_datatype.unit.this == "FOLLOWING":
+                        if (
+                            isinstance(interval_datatype.unit, exp.Var)
+                            and interval_datatype.unit.this == "FOLLOWING"
+                        ):
                             # Extract the interval string from Cast.this
                             interval_str = end.this
                             if isinstance(interval_str, exp.Literal):
@@ -336,7 +358,7 @@ def _transform_window_spec(node: exp.Expression) -> exp.Expression:
                                     # Create Interval node with correct structure
                                     interval_node = exp.Interval(
                                         this=exp.Literal.number(number),
-                                        unit=exp.var(unit)
+                                        unit=exp.var(unit),
                                     )
                                     # Replace the Cast with Interval
                                     node.set("end", interval_node)
@@ -358,6 +380,7 @@ def _transform_date_operations(tree: exp.Expression) -> exp.Expression:
 
     Note: We use iterative transformation to ensure nested expressions are properly handled.
     """
+
     def transformer(node):
         # Handle window specifications with INTERVAL casting
         node = _transform_window_spec(node)
@@ -372,10 +395,7 @@ def _transform_date_operations(tree: exp.Expression) -> exp.Expression:
             # We only transform if the right side is a numeric literal
             if isinstance(right, exp.Literal) and right.is_number:
                 # Create DATE_ADD(left, right) function
-                date_add = exp.Anonymous(
-                    this="DATE_ADD",
-                    expressions=[left, right]
-                )
+                date_add = exp.Anonymous(this="DATE_ADD", expressions=[left, right])
                 return date_add
 
         # Handle DATERANGE() function
@@ -407,12 +427,19 @@ def _transform_date_operations(tree: exp.Expression) -> exp.Expression:
                 # Check if this is "IS EMPTY" (expression should be Column with name EMPTY)
                 if isinstance(is_empty_check, exp.Column):
                     identifier = is_empty_check.this
-                    if isinstance(identifier, exp.Identifier) and identifier.this.upper() == "EMPTY":
+                    if (
+                        isinstance(identifier, exp.Identifier)
+                        and identifier.this.upper() == "EMPTY"
+                    ):
                         # Transform: NOT (range IS EMPTY) -> range.start <= range.end
                         range_expr = inner.this
                         range_expr = _unwrap_paren(range_expr)
-                        start = exp.Dot(this=range_expr, expression=exp.Identifier(this="start"))
-                        end = exp.Dot(this=range_expr, expression=exp.Identifier(this="end"))
+                        start = exp.Dot(
+                            this=range_expr, expression=exp.Identifier(this="start")
+                        )
+                        end = exp.Dot(
+                            this=range_expr, expression=exp.Identifier(this="end")
+                        )
                         return exp.LTE(this=start, expression=end)
 
         # Handle "IS EMPTY" for ranges (PostgreSQL)
@@ -421,12 +448,19 @@ def _transform_date_operations(tree: exp.Expression) -> exp.Expression:
             # Check if this is "IS EMPTY" (expression should be Column with name EMPTY)
             if isinstance(is_empty_check, exp.Column):
                 identifier = is_empty_check.this
-                if isinstance(identifier, exp.Identifier) and identifier.this.upper() == "EMPTY":
+                if (
+                    isinstance(identifier, exp.Identifier)
+                    and identifier.this.upper() == "EMPTY"
+                ):
                     # Transform: range IS EMPTY -> range.start > range.end
                     range_expr = node.this
                     range_expr = _unwrap_paren(range_expr)
-                    start = exp.Dot(this=range_expr, expression=exp.Identifier(this="start"))
-                    end = exp.Dot(this=range_expr, expression=exp.Identifier(this="end"))
+                    start = exp.Dot(
+                        this=range_expr, expression=exp.Identifier(this="start")
+                    )
+                    end = exp.Dot(
+                        this=range_expr, expression=exp.Identifier(this="end")
+                    )
                     return exp.GT(this=start, expression=end)
 
         # Look for comparisons
@@ -481,14 +515,18 @@ def _transform_date_operations(tree: exp.Expression) -> exp.Expression:
     max_iterations = 10
     for i in range(max_iterations):
         old_sql = tree.sql()
-        tree = tree.transform(transformer)  # copy=True by default for proper transformation
+        tree = tree.transform(
+            transformer
+        )  # copy=True by default for proper transformation
         new_sql = tree.sql()
         if old_sql == new_sql:
             break
     return tree
 
 
-def transpile_query(sql: str, source_dialect: str = "postgres", target_dialect: str = "databricks") -> str:
+def transpile_query(
+    sql: str, source_dialect: str = "postgres", target_dialect: str = "databricks"
+) -> str:
     """
     Transpile a SQL query from one dialect to another.
 
@@ -515,7 +553,12 @@ def transpile_query(sql: str, source_dialect: str = "postgres", target_dialect: 
         raise ValueError(f"Error transpiling query: {e}") from e
 
 
-def transpile_file(input_path: str, output_path: str = None, source_dialect: str = "postgres", target_dialect: str = "databricks") -> str:
+def transpile_file(
+    input_path: str,
+    output_path: str = None,
+    source_dialect: str = "postgres",
+    target_dialect: str = "databricks",
+) -> str:
     """
     Transpile SQL from a file.
 
