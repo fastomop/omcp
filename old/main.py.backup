@@ -344,48 +344,37 @@ except Exception as e:
 
 @mcp_app.tool(
     name="Get_Information_Schema",
-    description="Get the database schema name and type. Returns the schema prefix to use for table references (e.g., 'gold') and the database type (e.g., 'databricks').",
+    description="Get the information schema of the OMOP database.",
 )
 @capture_context(tool_name="Get_Information_Schema")
 def get_information_schema() -> mcp.types.CallToolResult:
-    """Get the database schema name and type.
+    """Get the information schema of the OMOP database.
 
-    This function returns only the essential schema information needed for SQL generation:
-    - schema_name: The schema/database prefix to use (e.g., 'gold', 'omop', 'public')
-    - database_type: The SQL dialect to use (e.g., 'databricks', 'postgres', 'duckdb')
-
+    This function retrieves information from the information schema of the OMOP database.
+    Information is restricted to only tables and columns allowed by the users configuration.
     Args:
         None
     Returns:
-        Simple text with schema name and database type
+        List of schemas, tables, columns and data types formatted as a CSV string.
     """
     try:
-        logger.debug("Getting schema information...")
-
-        # Return only the essential information
-        schema_name = db.cdm_schema
-        database_type = db.target_dialect
-
-        result = f"Schema: {schema_name}\nDatabase Type: {database_type}"
-
-        logger.debug(f"Schema info: {result}")
+        logger.debug("Getting information schema...")
+        # Note: @capture_context decorator already handles Langfuse tracing
+        result = db.get_information_schema()
+        logger.debug("Information schema retrieved successfully")
         return mcp.types.CallToolResult(
             content=[
                 mcp.types.TextContent(type="text", text=result),
-            ],
-            _meta={
-                "database_type": database_type,
-                "schema_name": schema_name
-            }
+            ]
         )
     except Exception as e:
-        logger.error(f"Failed to retrieve schema information: {e}")
+        logger.error(f"Failed to retrieve information schema: {e}")
         return mcp.types.CallToolResult(
             isError=True,
             content=[
                 mcp.types.TextContent(
                     type="text",
-                    text=f"Failed to retrieve schema information: {str(e)}",
+                    text=f"Failed to retrieve information schema: {str(e)}",
                 )
             ],
         )
@@ -439,105 +428,6 @@ def read_query(query: str) -> mcp.types.CallToolResult:
                 )
             ],
         )
-
-
-@mcp_app.tool(
-    name="Lookup_Drug",
-    description="Look up drug concepts by name in the OMOP concept table. Returns standardized drug concepts with concept_id, concept_name, concept_code, vocabulary_id, and domain_id.",
-)
-@capture_context(tool_name="Lookup_Drug")
-def lookup_drug(term: str, limit: int = 10) -> mcp.types.CallToolResult:
-    """Look up drug concepts by name.
-
-    This function searches for drug concepts in the OMOP concept table by partial name match.
-    Only returns standard, valid drug concepts ordered by name length (shortest first).
-
-    Args:
-        term: Drug name to search for (case-insensitive partial match)
-        limit: Maximum number of results to return (default: 10)
-
-    Returns:
-        CSV formatted results with: concept_id, concept_name, concept_code, vocabulary_id, domain_id
-    """
-    try:
-        schema = db.cdm_schema
-        # Use parameterized query pattern with LIKE
-        query = f"""
-        SELECT concept_id, concept_name, concept_code, vocabulary_id, domain_id
-        FROM {schema}.concept
-        WHERE LOWER(concept_name) LIKE LOWER('%{term}%')
-          AND domain_id = 'Drug'
-          AND standard_concept = 'S'
-          AND invalid_reason IS NULL
-        ORDER BY LENGTH(concept_name), concept_name
-        LIMIT {limit}
-        """
-        logger.info(f"Looking up drug: {term}")
-        result = db.read_query(query)
-        logger.info(f"Drug lookup completed for: {term}")
-        return mcp.types.CallToolResult(
-            content=[mcp.types.TextContent(type="text", text=result)]
-        )
-    except Exception as e:
-        logger.error(f"Failed to lookup drug '{term}': {e}")
-        return mcp.types.CallToolResult(
-            isError=True,
-            content=[
-                mcp.types.TextContent(
-                    type="text", text=f"Failed to lookup drug: {str(e)}"
-                )
-            ],
-        )
-
-
-@mcp_app.tool(
-    name="Lookup_Condition",
-    description="Look up condition concepts by name in the OMOP concept table. Returns standardized condition concepts with concept_id, concept_name, concept_code, vocabulary_id, and domain_id.",
-)
-@capture_context(tool_name="Lookup_Condition")
-def lookup_condition(term: str, limit: int = 10) -> mcp.types.CallToolResult:
-    """Look up condition concepts by name.
-
-    This function searches for condition concepts in the OMOP concept table by partial name match.
-    Only returns standard, valid condition concepts ordered by name length (shortest first).
-
-    Args:
-        term: Condition name to search for (case-insensitive partial match)
-        limit: Maximum number of results to return (default: 10)
-
-    Returns:
-        CSV formatted results with: concept_id, concept_name, concept_code, vocabulary_id, domain_id
-    """
-    try:
-        schema = db.cdm_schema
-        # Use parameterized query pattern with LIKE
-        query = f"""
-        SELECT concept_id, concept_name, concept_code, vocabulary_id, domain_id
-        FROM {schema}.concept
-        WHERE LOWER(concept_name) LIKE LOWER('%{term}%')
-          AND domain_id = 'Condition'
-          AND standard_concept = 'S'
-          AND invalid_reason IS NULL
-        ORDER BY LENGTH(concept_name), concept_name
-        LIMIT {limit}
-        """
-        logger.info(f"Looking up condition: {term}")
-        result = db.read_query(query)
-        logger.info(f"Condition lookup completed for: {term}")
-        return mcp.types.CallToolResult(
-            content=[mcp.types.TextContent(type="text", text=result)]
-        )
-    except Exception as e:
-        logger.error(f"Failed to lookup condition '{term}': {e}")
-        return mcp.types.CallToolResult(
-            isError=True,
-            content=[
-                mcp.types.TextContent(
-                    type="text", text=f"Failed to lookup condition: {str(e)}"
-                )
-            ],
-        )
-
 
 
 def main():
