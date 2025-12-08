@@ -228,25 +228,29 @@ class OmopDatabase:
                     parsed = urlparse(self.connection_string)
                     params = parse_qs(parsed.query)
 
-                    server_hostname = params.get('server_hostname', [None])[0]
-                    http_path = params.get('http_path', [None])[0]
-                    access_token = params.get('access_token', [None])[0]
-                    catalog = params.get('catalog', ['hive_metastore'])[0]
-                    schema = params.get('schema', ['default'])[0]
+                    server_hostname = params.get("server_hostname", [None])[0]
+                    http_path = params.get("http_path", [None])[0]
+                    access_token = params.get("access_token", [None])[0]
+                    catalog = params.get("catalog", ["hive_metastore"])[0]
+                    schema = params.get("schema", ["default"])[0]
 
-                    logger.info(f"Connecting to Databricks at {server_hostname}, catalog={catalog}, schema={schema}")
+                    logger.info(
+                        f"Connecting to Databricks at {server_hostname}, catalog={catalog}, schema={schema}"
+                    )
 
                     raw_conn = databricks_sql.connect(
                         server_hostname=server_hostname,
                         http_path=http_path,
                         access_token=access_token,
                         catalog=catalog,
-                        schema=schema
+                        schema=schema,
                     )
 
                     # Temporarily disable volume creation during connection
                     original_post_connect = DatabricksBackend._post_connect
-                    DatabricksBackend._post_connect = lambda self, memtable_volume=None: None
+                    DatabricksBackend._post_connect = (
+                        lambda self, memtable_volume=None: None
+                    )
 
                     try:
                         self._conn = ibis.databricks.from_connection(raw_conn)
