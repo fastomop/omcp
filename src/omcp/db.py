@@ -13,6 +13,7 @@ import databricks.sql as databricks_sql
 from ibis.backends.databricks import Backend as DatabricksBackend
 
 from omcp.sql_validator import SQLValidator
+from omcp.transpiler import transpile_query
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +114,11 @@ class OmopDatabase:
         self.cdm_schema = cdm_schema
         self.vocab_schema = vocab_schema
 
+        # Determine database dialect from connection string
+        self.target_dialect = self._get_dialect_from_connection_string(
+            connection_string
+        )
+
         # Try initial connection
         logger.info(f"Initializing connection to: {connection_string}")
         try:
@@ -126,6 +132,29 @@ class OmopDatabase:
             self.conn = self._conn
         except Exception as e:
             raise ConnectionError(f"Failed to connect to database: {str(e)}")
+
+    def _get_dialect_from_connection_string(self, connection_string: str) -> str:
+        """
+        Determine the SQL dialect from the connection string.
+
+        Args:
+            connection_string: Database connection string
+
+        Returns:
+            SQL dialect name (e.g., 'databricks', 'postgres', 'duckdb')
+        """
+        if connection_string.startswith("databricks://"):
+            return "databricks"
+        elif connection_string.startswith("postgres"):
+            return "postgres"
+        elif connection_string.startswith("duckdb://"):
+            return "duckdb"
+        else:
+            # Default to postgres for unknown dialects
+            logger.warning(
+                f"Unknown dialect for connection string: {connection_string}, defaulting to postgres"
+            )
+            return "postgres"
 
     def _ensure_connected(self):
         """Ensure we have a valid database connection."""
@@ -304,12 +333,34 @@ class OmopDatabase:
                     errors,
                 )
 
+            # Transpile query if needed (postgres -> databricks, etc.)
+            # We assume Claude generates queries in postgres dialect by default
+            source_dialect = "postgres"
+            transpiled_query = query
+
+            if self.target_dialect != source_dialect:
+                logger.info(
+                    f"Transpiling query from {source_dialect} to {self.target_dialect}"
+                )
+                try:
+                    transpiled_query = transpile_query(
+                        query, source_dialect, self.target_dialect
+                    )
+                    logger.debug(f"Original query: {query}")
+                    logger.debug(f"Transpiled query: {transpiled_query}")
+                except Exception as transpile_error:
+                    logger.warning(
+                        f"Transpilation failed: {transpile_error}, using original query"
+                    )
+                    # If transpilation fails, fall back to original query
+                    transpiled_query = query
+
             # Ensure connected
             self._ensure_connected()
 
-            # Execute the validated query
+            # Execute the validated and transpiled query
             with self._conn_lock:
-                result = self._conn.sql(query).limit(self.row_limit)
+                result = self._conn.sql(transpiled_query).limit(self.row_limit)
                 df = result.execute()
                 # Convert dataframe to csv
                 return df.to_csv(index=False)
@@ -325,7 +376,7 @@ class OmopDatabase:
             try:
                 self._ensure_connected()
                 with self._conn_lock:
-                    result = self._conn.sql(query).limit(self.row_limit)
+                    result = self._conn.sql(transpiled_query).limit(self.row_limit)
                     df = result.execute()
                     return df.to_csv(index=False)
             except Exception as retry_error:
