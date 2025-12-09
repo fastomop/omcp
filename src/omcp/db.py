@@ -9,8 +9,17 @@ import threading
 import time
 import logging
 from urllib.parse import urlparse, parse_qs
-import databricks.sql as databricks_sql
-from ibis.backends.databricks import Backend as DatabricksBackend
+
+# Import databricks conditionally (only if needed)
+try:
+    import databricks.sql as databricks_sql
+    from ibis.backends.databricks import Backend as DatabricksBackend
+
+    DATABRICKS_AVAILABLE = True
+except ImportError:
+    databricks_sql = None
+    DatabricksBackend = None
+    DATABRICKS_AVAILABLE = False
 
 from omcp.sql_validator import SQLValidator
 from omcp.transpiler import transpile_query
