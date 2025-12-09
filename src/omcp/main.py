@@ -109,6 +109,111 @@ def read_query(query: str) -> mcp.types.CallToolResult:
         )
 
 
+<<<<<<< Updated upstream
+=======
+@mcp_app.tool(
+    name="Lookup_Drug",
+    description="Look up drug concepts by name in the OMOP concept table. Returns standardized drug concepts with concept_id, concept_name, concept_code, vocabulary_id, and domain_id. Only searches standard RxNorm vocabulary.",
+)
+@capture_context(tool_name="Lookup_Drug")
+def lookup_drug(term: str, limit: int = 10) -> mcp.types.CallToolResult:
+    """Look up drug concepts by name.
+
+    This function searches for drug concepts in the OMOP concept table by partial name match.
+    Only returns standard, valid drug concepts from RxNorm vocabulary, ordered by name length (shortest first).
+    Excludes non-standard vocabularies like RxNorm Extension to ensure compatibility.
+
+    Args:
+        term: Drug name to search for (case-insensitive partial match)
+        limit: Maximum number of results to return (default: 10)
+
+    Returns:
+        CSV formatted results with: concept_id, concept_name, concept_code, vocabulary_id, domain_id
+    """
+    try:
+        schema = db.cdm_schema
+        # Filter to RxNorm vocabulary only - excludes RxNorm Extension and other non-standard vocabularies
+        query = f"""
+        SELECT concept_id, concept_name, concept_code, vocabulary_id, domain_id
+        FROM {schema}.concept
+        WHERE LOWER(concept_name) LIKE LOWER('%{term}%')
+          AND domain_id = 'Drug'
+          AND vocabulary_id = 'RxNorm'
+          AND standard_concept = 'S'
+          AND invalid_reason IS NULL
+        ORDER BY LENGTH(concept_name), concept_name
+        LIMIT {limit}
+        """
+        logger.info(f"Looking up drug: {term}")
+        result = db.read_query(query)
+        logger.info(f"Drug lookup completed for: {term}")
+        return mcp.types.CallToolResult(
+            content=[mcp.types.TextContent(type="text", text=result)]
+        )
+    except Exception as e:
+        logger.error(f"Failed to lookup drug '{term}': {e}")
+        return mcp.types.CallToolResult(
+            isError=True,
+            content=[
+                mcp.types.TextContent(
+                    type="text", text=f"Failed to lookup drug: {str(e)}"
+                )
+            ],
+        )
+
+
+@mcp_app.tool(
+    name="Lookup_Condition",
+    description="Look up condition concepts by name in the OMOP concept table. Returns standardized condition concepts with concept_id, concept_name, concept_code, vocabulary_id, and domain_id. Only searches standard SNOMED vocabulary.",
+)
+@capture_context(tool_name="Lookup_Condition")
+def lookup_condition(term: str, limit: int = 10) -> mcp.types.CallToolResult:
+    """Look up condition concepts by name.
+
+    This function searches for condition concepts in the OMOP concept table by partial name match.
+    Only returns standard, valid condition concepts from SNOMED vocabulary, ordered by name length (shortest first).
+    Filters to SNOMED CT vocabulary to ensure compatibility across OMOP databases.
+
+    Args:
+        term: Condition name to search for (case-insensitive partial match)
+        limit: Maximum number of results to return (default: 10)
+
+    Returns:
+        CSV formatted results with: concept_id, concept_name, concept_code, vocabulary_id, domain_id
+    """
+    try:
+        schema = db.cdm_schema
+        # Filter to SNOMED vocabulary only - standard vocabulary for conditions
+        query = f"""
+        SELECT concept_id, concept_name, concept_code, vocabulary_id, domain_id
+        FROM {schema}.concept
+        WHERE LOWER(concept_name) LIKE LOWER('%{term}%')
+          AND domain_id = 'Condition'
+          AND vocabulary_id = 'SNOMED'
+          AND standard_concept = 'S'
+          AND invalid_reason IS NULL
+        ORDER BY LENGTH(concept_name), concept_name
+        LIMIT {limit}
+        """
+        logger.info(f"Looking up condition: {term}")
+        result = db.read_query(query)
+        logger.info(f"Condition lookup completed for: {term}")
+        return mcp.types.CallToolResult(
+            content=[mcp.types.TextContent(type="text", text=result)]
+        )
+    except Exception as e:
+        logger.error(f"Failed to lookup condition '{term}': {e}")
+        return mcp.types.CallToolResult(
+            isError=True,
+            content=[
+                mcp.types.TextContent(
+                    type="text", text=f"Failed to lookup condition: {str(e)}"
+                )
+            ],
+        )
+
+
+>>>>>>> Stashed changes
 def main():
     """Main function to run the MCP server."""
 
