@@ -465,6 +465,7 @@ def lookup_drug(term: str, limit: int = 10) -> mcp.types.CallToolResult:
         FROM {schema}.concept
         WHERE LOWER(concept_name) LIKE LOWER('%{term}%')
           AND domain_id = 'Drug'
+          AND vocabulary_id = 'RxNorm'
           AND standard_concept = 'S'
           AND invalid_reason IS NULL
         ORDER BY LENGTH(concept_name), concept_name
@@ -514,6 +515,7 @@ def lookup_condition(term: str, limit: int = 10) -> mcp.types.CallToolResult:
         FROM {schema}.concept
         WHERE LOWER(concept_name) LIKE LOWER('%{term}%')
           AND domain_id = 'Condition'
+          AND vocabulary_id = 'SNOMED'
           AND standard_concept = 'S'
           AND invalid_reason IS NULL
         ORDER BY LENGTH(concept_name), concept_name
